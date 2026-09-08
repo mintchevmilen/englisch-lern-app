@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#1D4ED8">
+<meta name="description" content="English Adventure – spielerisch Englisch üben für Klasse 5">
+<title>English Adventure</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <header id="topbar" class="topbar">
+    <button id="backBtn" class="topbar__back" type="button" aria-label="Zurück" hidden>&#8592;</button>
+    <div class="topbar__title" id="topTitle">English Adventure</div>
+    <div class="topbar__stats" id="topStats">
+      <span class="pill pill--xp" id="pillXp">0 XP</span>
+      <span class="pill pill--streak" id="pillStreak">0</span>
+    </div>
+  </header>
+
+  <main id="screen" class="screen" tabindex="-1"></main>
+
+  <nav id="tabbar" class="tabbar" aria-label="Hauptnavigation">
+    <button class="tab" data-nav="home" type="button"><span class="tab__ico">&#127968;</span><span class="tab__lbl">Start</span></button>
+    <button class="tab" data-nav="units" type="button"><span class="tab__ico">&#128218;</span><span class="tab__lbl">Units</span></button>
+    <button class="tab" data-nav="games" type="button"><span class="tab__ico">&#127918;</span><span class="tab__lbl">Spiele</span></button>
+    <button class="tab" data-nav="tests" type="button"><span class="tab__ico">&#128221;</span><span class="tab__lbl">Tests</span></button>
+    <button class="tab" data-nav="progress" type="button"><span class="tab__ico">&#128200;</span><span class="tab__lbl">Fortschritt</span></button>
+  </nav>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- Daten zuerst, dann Logik. Bewusst klassische Scripts (kein Modul-System):
+     laufen auch bei file:// und auf alten Chrome-Versionen ohne Build-Schritt. -->
+<script src="data/units.js"></script>
+<script src="data/vocabulary.js"></script>
+<script src="data/grammar.js"></script>
+<script src="data/content.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/srs.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/player.js"></script>
+<script src="js/games.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
