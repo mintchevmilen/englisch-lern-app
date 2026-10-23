@@ -197,8 +197,16 @@ passen sich automatisch an.
 
 ## 6. Zur Sprachausgabe
 
-Die App nutzt die **Web Speech API** (`speechSynthesis`), die in Chrome auf Android
-mitgeliefert wird. Vorteile gegenüber Audiodateien:
+Die App hat zwei Aussprache-Wege, je nachdem wie sie läuft:
+
+* **PWA/Chrome** (siehe 4.2): Web Speech API (`speechSynthesis`).
+* **Native Android-APK** (siehe 4.5): `speechSynthesis` gibt es in der Android-
+  WebView nicht (seit Jahren eine bekannte Einschränkung) – deshalb nutzt die
+  APK stattdessen das Plugin `@capacitor-community/text-to-speech`, das direkt
+  die Geräte-eigene Text-zu-Sprache-Engine anspricht. `js/audio.js` erkennt
+  automatisch, welcher Weg gerade läuft.
+
+Vorteile gegenüber Audiodateien (für beide Wege):
 
 * **0 Byte Download** – bei ~300 Wörtern wären das sonst schnell 20–40 MB
 * funktioniert auch offline

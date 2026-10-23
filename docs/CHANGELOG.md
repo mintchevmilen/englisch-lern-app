@@ -1,5 +1,8 @@
 # Changelog – English Adventure
 
+## 2.1.1 – 2026-10-23
+- Fix: In der nativen Android-APK wurde nie etwas vorgelesen (kein 🔊-Icon, kein Auto-Vorlesen). Ursache: Android-System-WebView unterstützt `window.speechSynthesis` nicht – eine seit Jahren bekannte Chromium-Einschränkung, die nur die Chrome-PWA-Version betraf, nicht die APK. Behoben durch das native Plugin `@capacitor-community/text-to-speech` (nutzt die Geräte-TTS-Engine, offline, kostenlos/MIT); `js/audio.js` wählt jetzt automatisch nativ (APK) oder Web Speech API (PWA/Chrome).
+
 ## 2.1.0 – 2026-10-23
 - Wortschatz für Unit 2 (komplett inkl. Part B/C und Story), Unit 3 und Unit 4 auf den echten Buch-Wortschatz (Access 1, Cornelsen) umgestellt – vorher teils eigenständig formulierter Platzhalter-Wortschatz.
 - Thema von Unit 4 korrigiert: Wetter/Nachbarschaft/Wegbeschreibung/Bildbeschreibung statt der früheren Strand-Annahme.
