@@ -472,12 +472,17 @@
     h += '<div class="card"><b>Einstellungen</b>' +
       '<div class="row row--between mt"><span>Sprachausgabe</span>' +
       '<button class="btn btn--sm ' + (s.settings.sound ? '' : 'btn--ghost') + '" data-go="toggle:sound" type="button">' + (s.settings.sound ? 'An' : 'Aus') + '</button></div>' +
+      (w.Speech.recogSupported()
+        ? '<div class="row row--between mt"><span>Mikrofon beim Nachsprechen</span>' +
+          '<button class="btn btn--sm ' + (s.settings.mic !== false ? '' : 'btn--ghost') + '" data-go="toggle:mic" type="button">' + (s.settings.mic !== false ? 'An' : 'Aus') + '</button></div>'
+        : '') +
       '<div class="row row--between mt"><span>Sprechtempo</span><span>' +
       ['slow', 'normal', 'fast'].map(function (k, i2) {
         var v = [0.7, 0.85, 1][i2];
         return '<button class="btn btn--sm ' + (Math.abs(s.settings.rate - v) < 0.02 ? '' : 'btn--ghost') + '" data-go="rate:' + v + '" type="button">' + k + '</button>';
       }).join(' ') + '</span></div>' +
       '<div class="tiny mt">Sprachausgabe: ' + (w.Speech.supported() ? (w.Speech.ready() ? 'verfügbar ✓' : 'wird geladen …') : 'auf diesem Gerät nicht verfügbar') + '</div>' +
+      '<div class="tiny">Spracherkennung: ' + (w.Speech.recogSupported() ? 'verfügbar ✓ (beim ersten Mal fragt Android nach der Mikrofon-Erlaubnis)' : 'auf diesem Gerät nicht verfügbar, Nachsprechen läuft als Selbstkontrolle') + '</div>' +
       '<div class="tiny">Speicher: ' + (S.storageOk() ? 'localStorage aktiv ✓' : '⚠️ Browser blockiert das Speichern') + '</div>' +
       '</div>';
 
@@ -615,7 +620,11 @@
 
     if (a === 'panicgo') return UI.panic(p[1]);
 
-    if (a === 'toggle') { s.settings.sound = !s.settings.sound; S.saveNow(); return UI.render('parents'); }
+    if (a === 'toggle') {
+      if (p[1] === 'mic') s.settings.mic = (s.settings.mic === false);
+      else s.settings.sound = !s.settings.sound;
+      S.saveNow(); return UI.render('parents');
+    }
     if (a === 'rate') { s.settings.rate = parseFloat(p[1]); S.saveNow(); w.Speech.speak('This is my speed.'); return UI.render('parents'); }
     if (a === 'reset') {
       if (w.confirm('Wirklich ALLEN Lernfortschritt löschen? Das kann nicht rückgängig gemacht werden.')) {

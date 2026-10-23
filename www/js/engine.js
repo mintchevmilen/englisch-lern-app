@@ -97,35 +97,84 @@
       speak: it.en, wordId: it.id
     };
   }
+  /* Platzhalter-Eintraege ("a piece of ...", "I'd like ...") lassen sich
+     nicht sinnvoll eintippen; dafuer gibt es nur Auswahlaufgaben. */
+  function hasPlaceholder(it) { return /\.\.\.|…/.test(it.en + ' ' + it.de); }
+  function stripTo(en) { return String(en).replace(/^to\s+/i, ''); }
+
+  /* Alle englischen Woerter, die dieselbe deutsche Bedeutung haben
+     (danke -> thank you / thanks). So ist jede richtige Antwort richtig. */
+  function sameMeaningEn(it) {
+    var all = SRS.all(), out = [], i;
+    for (i = 0; i < all.length; i++) {
+      if (all[i].id !== it.id && SRS.same(it, all[i]) && all[i].key !== it.key) out.push(all[i].en);
+    }
+    return out;
+  }
+
   function typeFromWord(it) {
+    if (hasPlaceholder(it)) return null;
+    var alt = [stripTo(it.en)].concat(sameMeaningEn(it));
+    alt = alt.concat(alt.map(stripTo));
     return {
       kind: 'input',
       prompt: 'Schreibe das englische Wort:',
       question: it.de,
-      a: it.en, strict: true,
+      a: it.en, alt: alt, strict: true,
       why: it.de + ' = ' + it.en + (it.tip ? ' – ' + it.tip : ''),
       speak: it.en, wordId: it.id, ph: 'English ...'
     };
   }
   function transFromWord(it) {
+    if (hasPlaceholder(it)) return null;
     return {
       kind: 'input',
       prompt: 'Übersetze ins Deutsche:',
       question: it.en,
-      a: it.de, alt: it.de.split(/\s*,\s*/),
+      a: it.de, alt: it.parts.slice(),
       why: it.en + ' = ' + it.de,
       speak: it.en, wordId: it.id, ph: 'Deutsch ...', de: true
     };
   }
+
+  /* Lueckensatz: das Wort kann im Beispielsatz gebeugt vorkommen
+     (smile -> smiles, finish -> finishes). Beide Formen zaehlen als richtig. */
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function formsOf(b) {
+    var f = [b, b + 's', b + 'es', b + 'ed', b + 'd', b + 'ing'];
+    if (/[^aeiou]y$/.test(b)) f.push(b.slice(0, -1) + 'ies', b.slice(0, -1) + 'ied');
+    if (/e$/.test(b)) f.push(b.slice(0, -1) + 'ing');
+    if (/[^aeiou][aeiou][^aeiouwxy]$/.test(b)) f.push(b + b.slice(-1) + 'ed', b + b.slice(-1) + 'ing');
+    return f;
+  }
+  function findGap(it) {
+    if (!it.ex || hasPlaceholder(it) || /[\/()]|\b(sb|sth)\b/.test(it.en)) return null;
+    var base = stripTo(it.en).trim();
+    if (base.split(/\s+/).length > 3) return null;
+    var words = base.split(/\s+/), cands = [base];
+    if (words.length === 1) cands = formsOf(base.toLowerCase());
+    else if (/^[a-z]+$/i.test(words[0])) {
+      cands = [base].concat(formsOf(words[0].toLowerCase()).slice(1).map(function (f) {
+        return f + ' ' + words.slice(1).join(' ');
+      }));
+    }
+    cands.sort(function (x, y) { return y.length - x.length; });
+    var re = new RegExp('\\b(' + cands.map(esc).join('|') + ')\\b', 'i');
+    var m = re.exec(it.ex);
+    if (!m) return null;
+    /* Steht das Wort mehrfach im Satz ("Step by step"), bliebe die Loesung
+       sichtbar oder es gaebe zwei Luecken; dann lieber eine andere Aufgabe. */
+    if (it.ex.match(new RegExp(re.source, 'gi')).length > 1) return null;
+    return { re: re, form: m[1], base: base };
+  }
   function gapFromWord(it) {
-    if (!it.ex) return null;
-    var re = new RegExp('\\b' + it.en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-    if (!re.test(it.ex)) return null;
+    var g = findGap(it);
+    if (!g) return null;
     return {
       kind: 'input',
       prompt: 'Setze das fehlende Wort ein (' + it.de + '):',
-      question: it.ex.replace(re, '_____'),
-      a: it.en, strict: true,
+      question: it.ex.replace(g.re, '_____'),
+      a: g.form, alt: g.form.toLowerCase() === g.base.toLowerCase() ? [] : [g.base], strict: true,
       why: 'Richtig: ' + it.ex + ' (' + it.en + ' = ' + it.de + ')',
       speak: it.ex, wordId: it.id, ph: 'Wort ...'
     };
@@ -237,14 +286,68 @@
     return shuffle(out);
   };
 
+  /* Nur Eintraege, die man so aussprechen kann, wie sie dastehen
+     (keine Platzhalter wie "sb", "sth" oder "..."). */
+  E.speakable = function (items) {
+    return items.filter(function (it) { return !/\.\.\.|…|\/|\b(sb|sth)\b/.test(it.en); });
+  };
+
   E.speakingTasks = function (items) {
-    var out = [];
-    for (var i = 0; i < items.length; i++) {
+    var out = [], list = E.speakable(items);
+    for (var i = 0; i < list.length; i++) {
       out.push({ kind: 'repeat', prompt: 'Hör zu und sprich nach:',
-                 question: items[i].en, sub: items[i].de, ex: items[i].ex,
-                 speak: items[i].en, autoSpeak: true, wordId: items[i].id });
+                 question: list[i].en, sub: list[i].de, ex: list[i].ex,
+                 say: list[i].en.replace(/[()]/g, ''),
+                 speak: list[i].en, autoSpeak: true, wordId: list[i].id });
     }
     return out;
+  };
+
+  /* ---------------------------------------------------------
+     Sprachbewertung (Nachsprechen)
+     heard: Liste der Erkennungs-Ergebnisse (beste zuerst)
+     Rueckgabe: { level: 2 perfekt | 1 gut genug | 0 nicht erkannt,
+                  heard: bester Treffer als Text }
+     Kinder werden vom Erkenner oft ungenau verstanden; deshalb zaehlen
+     alle Alternativen, kleine Abweichungen und Zahlen als Woerter.
+     --------------------------------------------------------- */
+  var NUMW = { '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five',
+               '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten', '11': 'eleven',
+               '12': 'twelve', '13': 'thirteen', '14': 'fourteen', '15': 'fifteen',
+               '16': 'sixteen', '17': 'seventeen', '18': 'eighteen', '19': 'nineteen', '20': 'twenty' };
+  function spCanon(s) {
+    var t = String(s == null ? '' : s).replace(/[‘’´`]/g, "'").toLowerCase()
+      .replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    t = t.split(' ').map(function (x) { return NUMW[x] || x; }).join(' ');
+    return canon(stripTo(t));
+  }
+  function wordMatch(t, h) {
+    if (t === h) return true;
+    if (t.length <= 3 || h.length <= 3) return false;
+    return lev(t, h) <= (t.length > 6 ? 2 : 1);
+  }
+  E.speechScore = function (heard, target) {
+    var tg = spCanon(target), best = { level: 0, heard: (heard && heard[0]) || '' };
+    if (!tg) return best;
+    var tw = tg.split(' '), bestScore = -1, i, k, j;
+    for (i = 0; i < (heard || []).length; i++) {
+      var hg = spCanon(heard[i]);
+      if (!hg) continue;
+      if (hg === tg) return { level: 2, heard: heard[i] };
+      var hw = hg.split(' '), used = [], hit = 0;
+      for (k = 0; k < tw.length; k++) {
+        for (j = 0; j < hw.length; j++) {
+          if (!used[j] && wordMatch(tw[k], hw[j])) { used[j] = 1; hit++; break; }
+        }
+      }
+      var score = hit / tw.length;
+      if (score >= 0.8 && hw.length <= tw.length + 1 && score > bestScore) {
+        bestScore = score; best = { level: 1, heard: heard[i] };
+      } else if (best.level === 0 && bestScore < 0 && i === 0) {
+        best = { level: 0, heard: heard[i] };
+      }
+    }
+    return best;
   };
 
   E.listeningTasks = function (items) {
@@ -380,7 +483,7 @@
       case 'reading':
         return E.readingTasks(ls.unit);
       case 'speaking':
-        return E.speakingTasks(shuffle(words.slice()).slice(0, 8));
+        return E.speakingTasks(E.speakable(shuffle(words.slice())).slice(0, 8));
       case 'writing':
         return E.writingTasks(ls.unit);
       case 'everyday':

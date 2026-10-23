@@ -36,7 +36,7 @@
       mission: null,            // {day, need:{}, have:{}, claimed:false}
       tests: [],                // {ts,label,pct}
       games: {},                // id -> {plays,best}
-      settings: { sound: true, rate: 0.85 }
+      settings: { sound: true, rate: 0.85, mic: true }
     };
   }
 

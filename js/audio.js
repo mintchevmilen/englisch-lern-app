@@ -12,20 +12,27 @@
       (speechSynthesis), wie bisher.
    Wenn gar keine Stimme verfuegbar ist, bleibt die App voll
    benutzbar – die Hoer-Aufgaben werden automatisch uebersprungen.
+
+   Spracherkennung (Nachsprechen) funktioniert nach demselben Prinzip:
+   - APK: natives Plugin @capacitor-community/speech-recognition
+     (die Android-WebView hat keine Web-Speech-Erkennung),
+   - Browser/PWA (Chrome): SpeechRecognition der Web Speech API.
+   Ohne Erkennung bleibt das Nachsprechen wie bisher (Selbstkontrolle).
    ============================================================= */
 (function (w) {
   var A = w.Speech = {};
 
   /* ---------- Native (Capacitor / Android-APK) ---------- */
-  function nativeTTS() {
+  function nativePlugin(name) {
     try {
       var c = w.Capacitor;
-      if (c && c.isNativePlatform && c.isNativePlatform() && c.Plugins && c.Plugins.TextToSpeech) {
-        return c.Plugins.TextToSpeech;
-      }
+      if (!(c && c.isNativePlatform && c.isNativePlatform())) return null;
+      if (c.Plugins && c.Plugins[name]) return c.Plugins[name];
+      if (c.registerPlugin) return c.registerPlugin(name);
     } catch (e) {}
     return null;
   }
+  function nativeTTS() { return nativePlugin('TextToSpeech'); }
 
   var nativeLang = 'en-GB', nativeLangChecked = false;
 
@@ -133,5 +140,93 @@
     var tts = nativeTTS();
     if (tts) { try { tts.stop(); } catch (e) {} return; }
     try { if (synth) synth.cancel(); } catch (e) {}
+  };
+
+  /* ---------- Spracherkennung ---------- */
+  var session = null, webRec = null;
+
+  function nativeSR() { return nativePlugin('SpeechRecognition'); }
+  function webSR() { return w.SpeechRecognition || w.webkitSpeechRecognition || null; }
+
+  A.recogSupported = function () { return !!nativeSR() || !!webSR(); };
+
+  /* Nimmt einmal auf und ruft cb({ok:true, matches:[...]}) oder
+     cb({ok:false, error:'denied'|'unavailable'|'none'}) genau einmal auf.
+     'denied' = Mikrofon nicht erlaubt, 'unavailable' = keine Erkennung
+     auf diesem Geraet, 'none' = nichts verstanden. */
+  A.listen = function (opts, cb) {
+    opts = opts || {};
+    A.stopListening();
+    A.stop();                                   // eigene Sprachausgabe nicht mit aufnehmen
+    var lang = opts.lang || 'en-GB';
+    var s = { done: false, timer: null };
+    session = s;
+    function finish(r) {
+      if (s.done) return;
+      s.done = true; clearTimeout(s.timer);
+      if (session === s) session = null;
+      try { cb(r); } catch (e) {}
+    }
+    s.timer = setTimeout(function () {
+      if (s.done) return;
+      A.stopListening(true);
+      finish({ ok: false, error: 'none' });
+    }, opts.timeout || 12000);
+
+    var sr = nativeSR();
+    if (sr) {
+      try {
+        sr.available().then(function (r) {
+          if (!(r && r.available)) { finish({ ok: false, error: 'unavailable' }); return; }
+          return sr.checkPermissions().then(function (p) {
+            if (p && p.speechRecognition === 'granted') return true;
+            return sr.requestPermissions().then(function (p2) { return !!p2 && p2.speechRecognition === 'granted'; });
+          }).then(function (granted) {
+            if (s.done) return;
+            if (!granted) { finish({ ok: false, error: 'denied' }); return; }
+            return sr.start({ language: lang, maxResults: 5, prompt: '', partialResults: false, popup: false })
+              .then(function (res) {
+                var m = (res && res.matches) || [];
+                finish(m.length ? { ok: true, matches: m } : { ok: false, error: 'none' });
+              });
+          });
+        })['catch'](function (e) {
+          var msg = String((e && (e.message || e.errorMessage)) || e || '');
+          finish({ ok: false, error: /denied|permission|not allowed/i.test(msg) ? 'denied' : 'none' });
+        });
+      } catch (e) { finish({ ok: false, error: 'unavailable' }); }
+      return;
+    }
+
+    var R = webSR();
+    if (!R) { finish({ ok: false, error: 'unavailable' }); return; }
+    try {
+      var rec = webRec = new R();
+      rec.lang = lang; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 5;
+      rec.onresult = function (ev) {
+        var m = [], res = ev.results && ev.results[0], i;
+        if (res) for (i = 0; i < res.length; i++) m.push(res[i].transcript);
+        finish(m.length ? { ok: true, matches: m } : { ok: false, error: 'none' });
+      };
+      rec.onerror = function (ev) {
+        var er = ev && ev.error;
+        finish({ ok: false, error: (er === 'not-allowed' || er === 'service-not-allowed') ? 'denied'
+          : (er === 'no-speech' || er === 'aborted') ? 'none' : 'unavailable' });
+      };
+      rec.onend = function () { finish({ ok: false, error: 'none' }); };
+      rec.start();
+    } catch (e) { finish({ ok: false, error: 'unavailable' }); }
+  };
+
+  /* Aufnahme abbrechen. Ein noch ausstehender Rueckruf wird NICHT mehr
+     aufgerufen (z. B. wenn der Nutzer zur naechsten Aufgabe weitergeht). */
+  A.stopListening = function () {
+    var s = session; session = null;
+    if (s) {
+      s.done = true; clearTimeout(s.timer);
+      try { var sr = nativeSR(); if (sr && sr.stop) { var p = sr.stop(); if (p && p['catch']) p['catch'](function () {}); } } catch (e) {}
+    }
+    try { if (webRec) { webRec.abort(); } } catch (e) {}
+    webRec = null;
   };
 })(window);

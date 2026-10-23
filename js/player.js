@@ -5,6 +5,7 @@
   var D = w.DATA, S = w.Store, SRS = w.SRS, E = w.Engine;
   var P = w.Player = {};
   var host, cfg, tasks, idx, res, runStreak, bestRun, answered, retry, startTs, requeued, baseLen;
+  var micOff = false;      // in dieser Sitzung ausgefallen (Mikrofon verweigert/nicht vorhanden)
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -19,7 +20,7 @@
     tasks = (c.tasks || []).slice();
     if (!tasks.length) { cfg = null; w.UI.toast('Für diesen Bereich gibt es noch keine Inhalte.'); if (c.onExit) c.onExit(); return; }
     idx = 0; res = []; runStreak = 0; bestRun = 0; answered = false; retry = false;
-    requeued = {}; startTs = Date.now(); baseLen = tasks.length;
+    requeued = {}; startTs = Date.now(); baseLen = tasks.length; micOff = false;
     host = document.getElementById('screen');
     host.className = 'screen screen--full';
     document.getElementById('topbar').hidden = true;
@@ -34,6 +35,7 @@
       if (!w.confirm('Übung wirklich beenden? Der Fortschritt dieser Runde geht verloren.')) return;
     }
     w.Speech.stop();
+    w.Speech.stopListening();
     S.addTime(Math.min(3600, Math.round((Date.now() - startTs) / 1000)));
     S.saveNow();
     var cb = cfg && cfg.onExit;
@@ -60,6 +62,7 @@
   }
 
   function render() {
+    w.Speech.stopListening();
     if (idx >= tasks.length) return finish();
     var t = tasks[idx];
     answered = false; retry = false;
@@ -85,6 +88,7 @@
     }
 
     if (t.kind === 'repeat') {
+      var mic = micAvailable();
       body =
         '<div class="card center pop">' +
           '<div class="prompt">' + esc(t.prompt) + '</div>' +
@@ -96,9 +100,15 @@
             (t.ex ? '<button class="btn btn--ghost btn--sm" data-act="speak-ex" type="button">🔊 Satz</button>' : '') +
           '</div>' +
         '</div>' +
-        '<p class="tiny center">Sprich das Wort laut nach. Danach tippe auf „Gesagt“.</p>';
+        (mic
+          ? '<div id="micbox" class="mt"><button class="btn btn--green" data-act="mic" type="button">🎤 Jetzt sprechen</button></div>' +
+            '<p class="tiny center" id="micmsg">Tippe auf das Mikrofon und sprich das Wort laut nach.</p>'
+          : '<p class="tiny center">Sprich das Wort laut nach. Danach tippe auf „Gesagt“.</p>');
       host.innerHTML = header() + '<div class="play__body">' + body + '</div>' +
-        '<div class="play__foot"><button class="btn btn--green" data-act="said" type="button">✓ Gesagt</button></div>';
+        '<div class="play__foot">' +
+          (mic ? '<button class="btn btn--ghost" data-act="said" type="button">Ohne Mikrofon weiter</button>'
+               : '<button class="btn btn--green" data-act="said" type="button">✓ Gesagt</button>') +
+        '</div>';
       bind();
       if (t.autoSpeak) setTimeout(function () { w.Speech.speak(t.speak); }, 200);
       return;
@@ -154,6 +164,49 @@
     }
   }
 
+  /* ---------------- Nachsprechen mit Spracherkennung ---------------- */
+  function micAvailable() {
+    return !micOff && w.Speech.recogSupported() && S.data().settings.mic !== false;
+  }
+
+  function setMic(html, msg) {
+    var box = host && host.querySelector('#micbox'), m = host && host.querySelector('#micmsg');
+    if (box && html != null) box.innerHTML = html;
+    if (m && msg != null) m.innerHTML = msg;
+  }
+  var BTN_MIC = '<button class="btn btn--green" data-act="mic" type="button">🎤 Jetzt sprechen</button>';
+  var BTN_AGAIN = '<button class="btn btn--green" data-act="mic" type="button">🎤 Noch einmal sprechen</button>';
+
+  function listen(t) {
+    if (answered) return;
+    var myIdx = idx;
+    setMic('<button class="btn" type="button" disabled>🎤 Ich höre zu …</button>', 'Sprich jetzt deutlich und nicht zu leise.');
+    w.Speech.listen({ lang: 'en-GB' }, function (r) {
+      if (!cfg || idx !== myIdx || tasks[idx] !== t || answered) return;      // veraltete Antwort
+      if (!r.ok) {
+        if (r.error === 'denied' || r.error === 'unavailable') {
+          micOff = true;
+          w.UI.toast(r.error === 'denied'
+            ? 'Mikrofon nicht erlaubt. In den Android-Einstellungen kannst du es für die App erlauben.'
+            : 'Spracherkennung ist auf diesem Gerät nicht verfügbar.');
+          return render();                       // zurueck zur Selbstkontrolle ("Gesagt")
+        }
+        return setMic(BTN_AGAIN, 'Ich habe nichts gehört. Versuch es noch einmal, etwas lauter.');
+      }
+      var sc = E.speechScore(r.matches, t.say || t.question);
+      if (sc.level > 0) {
+        answered = true;
+        record(true, t);
+        setMic('<button class="btn btn--green" data-act="cont" type="button">Weiter</button>',
+          (sc.level === 2 ? '✅ <b>Perfekt!</b> ' : '✅ <b>Gut!</b> ') +
+          'Ich habe verstanden: „' + esc(sc.heard) + '“');
+        var foot = host.querySelector('.play__foot'); if (foot) foot.style.display = 'none';
+      } else {
+        setMic(BTN_AGAIN, 'Ich habe verstanden: „' + esc(sc.heard) + '“. Hör noch einmal zu (🔊) und versuch es nochmal.');
+      }
+    });
+  }
+
   var chosen = [];
   function drawOrder(t, sel) {
     chosen = sel;
@@ -179,7 +232,8 @@
       if (a === 'speak') return w.Speech.speak(t.speak);
       if (a === 'speak-ex') return w.Speech.speak(t.ex);
       if (a === 'next') return nextTask(true);
-      if (a === 'said') { record(true, t); return nextTask(true); }
+      if (a === 'said') { w.Speech.stopListening(); record(true, t); return nextTask(true); }
+      if (a === 'mic') return listen(t);
       if (a === 'pick') return pick(+b.getAttribute('data-i'));
       if (a === 'submit') return submit();
       if (a === 'again') return render();

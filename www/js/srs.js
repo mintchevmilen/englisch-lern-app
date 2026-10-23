@@ -24,6 +24,59 @@
     return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
+  /* ---------- Bedeutungs-Helfer ----------
+     Dieselbe Bedeutung kommt oft unter mehreren Woertern vor
+     (danke = thank you / thanks, gross = big / large). Damit Quizfragen
+     nicht mehrdeutig werden und tippbare Antworten fair bewertet
+     werden, zerlegen wir die deutsche Uebersetzung in ihre
+     gleichwertigen Teile. */
+  function enKey(en) {
+    return String(en).toLowerCase().replace(/^to\s+/, '').replace(/[.!?]+$/, '').replace(/\s+/g, ' ').trim();
+  }
+  function wordCount(en) { return enKey(en).split(' ').length; }
+
+  /* "Stadt (kleiner)" -> ["Stadt"], "schwer, schwierig; hart" -> 3 Teile,
+     bei laengeren Phrasen ("mir geht es gut, danke") wird NICHT an jedem
+     Komma getrennt, sonst wuerde ein Einzelwort wie "danke" als
+     Uebersetzung der ganzen Phrase durchgehen. */
+  SRS.deParts = function (de, en) {
+    var full = String(de).replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    var out = [], seen = {}, short = !en || wordCount(en) <= 2;
+    function add(x) {
+      x = x.replace(/[.!?]+$/, '').trim();
+      var k = x.toLowerCase();
+      if (x && !seen[k]) { seen[k] = 1; out.push(x); }
+    }
+    full.split(/\s+\/\s+|\s*;\s*/).forEach(function (part) {
+      var segs = part.split(/\s*,\s*/);
+      if (short) { segs.forEach(add); }
+      else {
+        add(part);
+        segs.forEach(function (sg) { if (sg.split(' ').length >= 2) add(sg); });
+      }
+    });
+    return out;
+  };
+  SRS.enKey = enKey;
+
+  /* Gleiche Bedeutung? (wird fuer falsche Antwortmoeglichkeiten genutzt) */
+  SRS.same = function (a, b) {
+    if (a.id === b.id || a.key === b.key) return true;
+    for (var i = 0; i < a.parts.length; i++) {
+      if (b.parts.indexOf(a.parts[i]) >= 0) return true;
+      for (var j = 0; j < b.parts.length; j++) {
+        if (a.parts[i].toLowerCase() === b.parts[j].toLowerCase()) return true;
+      }
+    }
+    return false;
+  };
+
+  /* Wortart grob: Verb ("to ..."), Phrase (mehrere Woerter), Einzelwort. */
+  function shape(it) {
+    if (/^to\s/i.test(it.en)) return 'v';
+    return /\s/.test(it.en.trim()) ? 'p' : 'w';
+  }
+
   (function build() {
     for (var u = 0; u < D.units.length; u++) {
       var uid = D.units[u].id, list = D.vocab[uid] || [];
@@ -34,6 +87,8 @@
           id: uid + ':' + slug(v.en), unit: uid, i: i,
           en: v.en, de: v.de, ex: v.ex || '', exDe: v.exDe || '', tip: v.tip || ''
         };
+        item.key = enKey(v.en);
+        item.parts = SRS.deParts(v.de, v.en);
         ALL.push(item); BY_ID[item.id] = item; BY_UNIT[uid].push(item);
       }
     }
@@ -87,6 +142,7 @@
     var pool = opts.ids ? opts.ids.map(SRS.byId).filter(Boolean)
              : (opts.unit ? SRS.ofUnit(opts.unit).slice() : ALL.slice());
     var n = opts.n || 10, now = Date.now(), i;
+    pool = SRS.unique(pool);
 
     if (opts.mode === 'weak') {
       pool = pool.filter(function (it) { var r = SRS.recRaw(it.id); return r && r.w > 0; });
@@ -115,6 +171,20 @@
     return head.slice(0, n);
   };
 
+  /* Dasselbe englische Wort steht in mehreren Units (z. B. "town" in
+     Welcome und Unit 5). In gemischten Auswahlen soll es nur einmal
+     vorkommen; behalten wird der Eintrag mit dem meisten Lernfortschritt. */
+  SRS.unique = function (list) {
+    var best = {}, order = [], i, it, k, r, cnt;
+    for (i = 0; i < list.length; i++) {
+      it = list[i]; k = it.key;
+      r = SRS.recRaw(it.id); cnt = r ? r.c + r.w : 0;
+      if (!(k in best)) { best[k] = { it: it, cnt: cnt }; order.push(k); }
+      else if (cnt > best[k].cnt) best[k] = { it: it, cnt: cnt };
+    }
+    return order.map(function (kk) { return best[kk].it; });
+  };
+
   SRS.weak = function (n) { return SRS.pick({ mode: 'weak', n: n || 5 }); };
 
   SRS.dueCount = function (uid) {
@@ -139,21 +209,29 @@
              pct: list.length ? Math.round((st[2] * 0.5 + st[3] * 0.8 + st[4]) / list.length * 100) : 0 };
   };
 
-  /* Falsche Antwortmoeglichkeiten finden – moeglichst aus derselben Unit. */
+  /* Falsche Antwortmoeglichkeiten finden.
+     Regeln: nie ein Wort mit gleicher Bedeutung (sonst waeren zwei
+     Antworten richtig), moeglichst aus derselben Unit und moeglichst
+     mit gleicher Wortart (Verb zu Verb, Phrase zu Phrase). */
   SRS.distractors = function (item, n, field) {
     field = field || 'de';
-    var pool = SRS.ofUnit(item.unit).filter(function (x) { return x.id !== item.id && x[field] !== item[field]; });
-    if (pool.length < n) {
-      pool = pool.concat(ALL.filter(function (x) {
-        return x.id !== item.id && x[field] !== item[field] && x.unit !== item.unit;
-      }));
+    var sh = shape(item), tiers = [[], [], [], []], seenVal = {}, i, x;
+    function ok(c) { return !SRS.same(item, c) && c[field] !== item[field]; }
+    for (i = 0; i < ALL.length; i++) {
+      x = ALL[i];
+      if (!ok(x)) continue;
+      var sameUnit = x.unit === item.unit, sameShape = shape(x) === sh;
+      tiers[(sameUnit ? 0 : 2) + (sameShape ? 0 : 1)].push(x);
     }
-    var out = [], used = {};
-    var guard = 0;
-    while (out.length < n && guard++ < 400 && pool.length) {
-      var k = Math.floor(Math.random() * pool.length), c = pool[k];
-      if (!used[c[field]]) { used[c[field]] = 1; out.push(c); }
-      pool.splice(k, 1);
+    var out = [], t, pool, k, c, guard;
+    for (t = 0; t < tiers.length && out.length < n; t++) {
+      pool = tiers[t]; guard = 0;
+      while (out.length < n && pool.length && guard++ < 600) {
+        k = Math.floor(Math.random() * pool.length); c = pool[k]; pool.splice(k, 1);
+        if (seenVal[c[field].toLowerCase()]) continue;
+        seenVal[c[field].toLowerCase()] = 1;
+        out.push(c);
+      }
     }
     return out;
   };
