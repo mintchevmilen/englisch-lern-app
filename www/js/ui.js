@@ -476,6 +476,10 @@
         ? '<div class="row row--between mt"><span>Mikrofon beim Nachsprechen</span>' +
           '<button class="btn btn--sm ' + (s.settings.mic !== false ? '' : 'btn--ghost') + '" data-go="toggle:mic" type="button">' + (s.settings.mic !== false ? 'An' : 'Aus') + '</button></div>'
         : '') +
+      (w.Speech.recogSupported()
+        ? '<div class="row row--between mt"><span>Live-Anzeige beim Sprechen <span class="tiny">(Test)</span></span>' +
+          '<button class="btn btn--sm ' + (s.settings.live === true ? '' : 'btn--ghost') + '" data-go="toggle:live" type="button">' + (s.settings.live === true ? 'An' : 'Aus') + '</button></div>'
+        : '') +
       '<div class="row row--between mt"><span>Sprechtempo</span><span>' +
       ['slow', 'normal', 'fast'].map(function (k, i2) {
         var v = [0.7, 0.85, 1][i2];
@@ -485,6 +489,16 @@
       '<div class="tiny">Spracherkennung: ' + (w.Speech.recogSupported() ? 'verfügbar ✓ (beim ersten Mal fragt Android nach der Mikrofon-Erlaubnis). Die App stellt die Sprache selbst ein: Englisch beim Nachsprechen, Deutsch bei Übersetzungen ins Deutsche, unabhängig von der Handy-Sprache.' : 'auf diesem Gerät nicht verfügbar, Nachsprechen läuft als Selbstkontrolle') + '</div>' +
       '<div class="tiny">Speicher: ' + (S.storageOk() ? 'localStorage aktiv ✓' : '⚠️ Browser blockiert das Speichern') + '</div>' +
       '</div>';
+
+    h += '<div class="card"><b>Sprach-Diagnose</b>' +
+      '<div class="muted mt-s">Falls Vorlesen oder Spracherkennung nicht funktionieren: Tests starten und das Ergebnis hier ablesen.</div>' +
+      '<div class="row mt" style="flex-wrap:wrap">' +
+        '<button class="btn btn--ghost btn--sm" data-go="diag:info" type="button">Geräte-Info</button>' +
+        '<button class="btn btn--ghost btn--sm" data-go="diag:tts" type="button">🔊 Vorlesen testen</button>' +
+        '<button class="btn btn--ghost btn--sm" data-go="diag:mic" type="button">🎤 Mikrofon testen</button>' +
+        (w.Speech.recogSupported() ? '<button class="btn btn--ghost btn--sm" data-go="diag:miclive" type="button">🎤 Live testen</button>' : '') +
+      '</div>' +
+      '<pre id="diagout" class="tiny" style="white-space:pre-wrap;word-break:break-word;margin:10px 0 0;background:#F1F5F9;border-radius:10px;padding:8px;min-height:38px"></pre></div>';
 
     h += '<div class="card"><b>Daten</b>' +
       '<button class="btn btn--ghost mt" data-go="export" type="button">Fortschritt anzeigen (Backup)</button>' +
@@ -620,8 +634,17 @@
 
     if (a === 'panicgo') return UI.panic(p[1]);
 
+    if (a === 'diag') {
+      var out = document.getElementById('diagout');
+      if (out) out.textContent = '';
+      return w.Speech.diagnose(p[1], function (line) {
+        var o = document.getElementById('diagout');
+        if (o) o.textContent += line + '\n';
+      });
+    }
     if (a === 'toggle') {
       if (p[1] === 'mic') s.settings.mic = (s.settings.mic === false);
+      else if (p[1] === 'live') s.settings.live = !(s.settings.live === true);
       else s.settings.sound = !s.settings.sound;
       S.saveNow(); return UI.render('parents');
     }

@@ -206,6 +206,7 @@
     listening = true; setRes(''); setLive(''); setMicState('waiting');
     w.Speech.listen({
       lang: lang,
+      live: S.data().settings.live === true,
       onState: function (st) { if (valid()) setMicState(st); },
       onPartial: function (txt) { if (valid()) setLive('„' + txt + '“'); }
     }, function (r) {

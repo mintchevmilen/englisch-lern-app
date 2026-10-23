@@ -118,7 +118,7 @@
           rate: opts.rate || w.Store.data().settings.rate || 0.85,
           pitch: 1,
           volume: 1
-        })['catch'](function () { /* z.B. keine TTS-Engine installiert */ });
+        })['catch'](function (e) { A.lastError = String((e && (e.message || e.errorMessage)) || e || ''); /* z.B. keine TTS-Engine installiert */ });
         return true;
       } catch (e) { return false; }
     }
@@ -147,12 +147,16 @@
 
   function nativeSR() { return nativePlugin('SpeechRecognition'); }
   function webSR() { return w.SpeechRecognition || w.webkitSpeechRecognition || null; }
+  function msgOf(e) { return String((e && (e.message || e.errorMessage || e.code)) || e || ''); }
 
   A.recogSupported = function () { return !!nativeSR() || !!webSR(); };
 
-  /* Laufende Aufnahme beim Geraet beenden (ohne Rueckruf an die App). */
-  function abortAll() {
-    try { var sr = nativeSR(); if (sr && sr.stop) { var p = sr.stop(); if (p && p['catch']) p['catch'](function () {}); } } catch (e) {}
+  /* Laufende Aufnahme beim Geraet beenden (ohne Rueckruf an die App).
+     Das native Plugin wird nur angesprochen, wenn wirklich eine Aufnahme laeuft. */
+  function abortAll(nativeToo) {
+    if (nativeToo) {
+      try { var sr = nativeSR(); if (sr && sr.stop) { var p = sr.stop(); if (p && p['catch']) p['catch'](function () {}); } } catch (e) {}
+    }
     try { if (webRec) { webRec.abort(); } } catch (e) {}
     webRec = null;
   }
@@ -161,9 +165,12 @@
      (opts.lang: 'en-GB' fuer Englisch, 'de-DE' fuer Deutsch) und haengt
      damit nicht von der Spracheinstellung des Handys ab.
 
-     opts.onState(st):   'waiting' (Mikrofon ist an, noch keine Stimme),
-                         'speaking' (Stimme erkannt), 'processing' (Auswertung)
-     opts.onPartial(t):  Live-Text waehrend des Sprechens
+     opts.onState(st):   'waiting' (Aufnahme laeuft), 'speaking' (Stimme erkannt,
+                         nur im Live-Modus), 'processing' (Auswertung)
+     opts.onPartial(t):  Live-Text waehrend des Sprechens (nur Live-Modus)
+     opts.live:          Live-Modus (Teilergebnisse). Standard: aus, denn der
+                         einfache Modus ist auf mehr Geraeten zuverlaessig.
+     opts.log(msg):      Diagnose-Ausgabe
      cb(r):  genau einmal, r = {ok:true, matches:[...]} oder
              {ok:false, error:'denied'|'unavailable'|'none'}                */
   A.listen = function (opts, cb) {
@@ -173,71 +180,97 @@
     var lang = opts.lang || 'en-GB';
     var s = { done: false, timers: [], cleanup: null };
     session = s;
+    function dbg(m) { if (opts.log) { try { opts.log(m); } catch (e) {} } }
     function state(x) { if (!s.done && opts.onState) { try { opts.onState(x); } catch (e) {} } }
     function partial(t, all) { if (!s.done && opts.onPartial) { try { opts.onPartial(t, all); } catch (e) {} } }
     function later(fn, ms) { var id = setTimeout(fn, ms); s.timers.push(id); return id; }
-    function clearAll() { s.timers.forEach(clearTimeout); s.timers = []; if (s.cleanup) { try { s.cleanup(); } catch (e) {} } }
-    s.clear = clearAll;
+    s.clear = function () { s.timers.forEach(clearTimeout); s.timers = []; if (s.cleanup) { try { s.cleanup(); } catch (e) {} } };
     function finish(r) {
       if (s.done) return;
-      state = function () {}; partial = function () {};
-      s.done = true; clearAll();
+      s.done = true; s.clear();
       if (session === s) session = null;
+      dbg('Ergebnis: ' + JSON.stringify(r));
       try { cb(r); } catch (e) {}
     }
-    later(function () { finish({ ok: false, error: 'none' }); abortAll(); }, opts.timeout || 16000);
+    later(function () { dbg('Zeitlimit erreicht'); finish({ ok: false, error: 'none' }); abortAll(true); }, opts.timeout || 16000);
+
+    /* Fehlertext des Plugins -> Fehlerart. Nur eindeutige Faelle gelten als
+       "nicht verfuegbar"; alles andere (kein Treffer, Zeitueberschreitung ...) heisst "nichts gehoert". */
+    function errKind(e) {
+      var m = msgOf(e);
+      if (/denied|permission|not allowed|missing/i.test(m)) return 'denied';
+      if (/not available|unavailable|not implemented|not supported|not found/i.test(m)) return 'unavailable';
+      return 'none';
+    }
 
     var sr = nativeSR();
     if (sr) {
-      var last = [], began = false, stopped = false, endT = null, startT = null;
-      var settle = function () { finish(last.length ? { ok: true, matches: last } : { ok: false, error: 'none' }); };
-      var onPart = function (d) {
-        if (s.done) return;
-        var m = (d && d.matches) || [];
-        if (!m.length) return;
-        last = m; partial(m[0], m);
-        if (stopped) { clearTimeout(endT); endT = later(settle, 450); }    // letzte (endgueltige) Liste abwarten
-      };
-      var onStat = function (d) {
-        if (s.done || !d) return;
-        if (d.status === 'started') { began = true; clearTimeout(startT); state('speaking'); }
-        else if (d.status === 'stopped') {
-          stopped = true; state('processing');
-          clearTimeout(endT); endT = later(settle, 1800);
-        }
-      };
-      s.cleanup = function () { try { var p = sr.removeAllListeners(); if (p && p['catch']) p['catch'](function () {}); } catch (e) {} };
+      var live = !!opts.live;
+      dbg('natives Plugin gefunden, Modus: ' + (live ? 'live' : 'einfach') + ', Sprache: ' + lang);
       try {
         sr.available().then(function (r) {
+          dbg('available: ' + JSON.stringify(r));
           if (!(r && r.available)) { finish({ ok: false, error: 'unavailable' }); return; }
           return sr.checkPermissions().then(function (p) {
+            dbg('Berechtigung: ' + JSON.stringify(p));
             if (p && p.speechRecognition === 'granted') return true;
-            return sr.requestPermissions().then(function (p2) { return !!p2 && p2.speechRecognition === 'granted'; });
+            return sr.requestPermissions().then(function (p2) { dbg('Berechtigung nach Anfrage: ' + JSON.stringify(p2)); return !!p2 && p2.speechRecognition === 'granted'; });
           }).then(function (granted) {
             if (s.done) return;
             if (!granted) { finish({ ok: false, error: 'denied' }); return; }
-            return Promise.all([sr.addListener('partialResults', onPart), sr.addListener('listeningState', onStat)])
-              .then(function () {
-                if (s.done) return;
-                return sr.start({ language: lang, maxResults: 5, prompt: '', partialResults: true, popup: false });
-              }).then(function () {
-                if (s.done) return;
-                state('waiting');
-                // Spricht niemand, nach einigen Sekunden aufhoeren.
-                startT = later(function () { if (!began) { finish({ ok: false, error: 'none' }); abortAll(); } }, 7000);
-              });
+            if (!live) {
+              /* Einfacher Modus: ein Aufruf, Ergebnis kommt als Rueckgabewert. */
+              state('waiting');
+              dbg('start() ...');
+              return sr.start({ language: lang, maxResults: 5, prompt: '', partialResults: false, popup: false })
+                .then(function (res) {
+                  dbg('start() fertig: ' + JSON.stringify(res));
+                  var m = (res && res.matches) || [];
+                  finish(m.length ? { ok: true, matches: m } : { ok: false, error: 'none' });
+                });
+            }
+            /* Live-Modus: Teilergebnisse und Start/Ende der Stimme ueber Ereignisse. */
+            var last = [], began = false, stopped = false, endT = null, startT = null, handles = [];
+            var settle = function () { finish(last.length ? { ok: true, matches: last } : { ok: false, error: 'none' }); };
+            var onPart = function (d) {
+              if (s.done) return;
+              var m = (d && d.matches) || [];
+              if (!m.length) return;
+              dbg('Teilergebnis: ' + JSON.stringify(m));
+              last = m; partial(m[0], m);
+              if (stopped) { clearTimeout(endT); endT = later(settle, 450); }
+            };
+            var onStat = function (d) {
+              if (s.done || !d) return;
+              dbg('Ereignis: ' + JSON.stringify(d));
+              if (d.status === 'started') { began = true; clearTimeout(startT); state('speaking'); }
+              else if (d.status === 'stopped') { stopped = true; state('processing'); clearTimeout(endT); endT = later(settle, 1800); }
+            };
+            s.cleanup = function () { handles.forEach(function (h) { try { h && h.remove && h.remove(); } catch (e) {} }); };
+            var reg = function (n, f) {
+              try { var pr = sr.addListener(n, f); if (pr && pr.then) pr.then(function (h) { handles.push(h); }, function () {}); return pr; }
+              catch (e) { dbg('addListener ' + n + ' Fehler: ' + msgOf(e)); return null; }
+            };
+            reg('partialResults', onPart); reg('listeningState', onStat);
+            state('waiting');
+            dbg('start() live ...');
+            return sr.start({ language: lang, maxResults: 5, prompt: '', partialResults: true, popup: false }).then(function () {
+              dbg('start() live angenommen');
+              startT = later(function () { if (!began) { dbg('keine Stimme erkannt'); finish({ ok: false, error: 'none' }); abortAll(true); } }, 7000);
+            });
           });
         })['catch'](function (e) {
-          var msg = String((e && (e.message || e.errorMessage)) || e || '');
-          finish({ ok: false, error: /denied|permission|not allowed/i.test(msg) ? 'denied' : 'unavailable' });
+          dbg('Fehler: ' + msgOf(e));
+          finish({ ok: false, error: errKind(e) });
         });
-      } catch (e) { finish({ ok: false, error: 'unavailable' }); }
+      } catch (e) { dbg('Ausnahme: ' + msgOf(e)); finish({ ok: false, error: 'unavailable' }); }
       return;
     }
 
     var R = webSR();
-    if (!R) { finish({ ok: false, error: 'unavailable' }); return; }
+    if (!R) { dbg('keine Spracherkennung (weder nativ noch Browser)'); finish({ ok: false, error: 'unavailable' }); return; }
     try {
+      dbg('Browser-Erkennung, Sprache: ' + lang);
       var rec = webRec = new R(), lastW = [];
       rec.lang = lang; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 5;
       rec.onaudiostart = function () { state('waiting'); };
@@ -252,12 +285,13 @@
       };
       rec.onerror = function (ev) {
         var er = ev && ev.error;
+        dbg('Browser-Fehler: ' + er);
         finish({ ok: false, error: (er === 'not-allowed' || er === 'service-not-allowed') ? 'denied'
           : (er === 'no-speech' || er === 'aborted') ? 'none' : 'unavailable' });
       };
       rec.onend = function () { finish(lastW.length ? { ok: true, matches: lastW } : { ok: false, error: 'none' }); };
       rec.start();
-    } catch (e) { finish({ ok: false, error: 'unavailable' }); }
+    } catch (e) { dbg('Ausnahme: ' + msgOf(e)); finish({ ok: false, error: 'unavailable' }); }
   };
 
   /* Aufnahme abbrechen. Ein noch ausstehender Rueckruf wird NICHT mehr
@@ -265,6 +299,51 @@
   A.stopListening = function () {
     var s = session; session = null;
     if (s) { s.done = true; try { s.clear(); } catch (e) {} }
-    abortAll();
+    abortAll(!!s);
+  };
+
+  /* ---------- Diagnose (Eltern-Einstellungen) ----------
+     Zeigt, was auf dem Geraet tatsaechlich passiert, damit Fehler ohne
+     Raten gefunden werden. log(text) wird fuer jede Zeile aufgerufen. */
+  A.diagnose = function (kind, log) {
+    var c = w.Capacitor, t0 = Date.now();
+    function L(m) { log(((Date.now() - t0) / 1000).toFixed(1) + ' s  ' + m); }
+    function has(n) { try { return !!(c && c.Plugins && c.Plugins[n]); } catch (e) { return false; } }
+    if (kind === 'info') {
+      var native = !!(c && c.isNativePlatform && c.isNativePlatform());
+      L('App-Version: ' + (w.APP_VERSION || '?'));
+      L('Native App: ' + (native ? 'ja' : 'nein (Browser)'));
+      try { L('Plugins im Bridge-Objekt: ' + (c && c.Plugins ? Object.keys(c.Plugins).join(', ') : 'keine')); } catch (e) {}
+      L('TTS-Plugin: ' + (nativeTTS() ? 'ja' : 'nein') + ' | Erkennungs-Plugin: ' + (nativeSR() ? 'ja' : 'nein'));
+      L('Browser-Sprachausgabe: ' + (synth ? 'ja' : 'nein') + ' | Browser-Erkennung: ' + (webSR() ? 'ja' : 'nein'));
+      L('Service Worker aktiv: ' + ((w.navigator && w.navigator.serviceWorker && w.navigator.serviceWorker.controller) ? 'ja' : 'nein'));
+      L('Einstellungen: ' + JSON.stringify(w.Store.data().settings));
+      L('Letzter Fehler beim Vorlesen: ' + (A.lastError || 'keiner'));
+      return;
+    }
+    if (kind === 'tts') {
+      var tts = nativeTTS();
+      if (!tts) {
+        L('Kein natives Vorlese-Plugin. Browser-Stimme: ' + (synth ? 'ja, sage Test' : 'nein'));
+        if (synth) { try { synth.cancel(); var u = new w.SpeechSynthesisUtterance('Hello, this is a test.'); u.lang = 'en-GB'; u.onend = function () { L('Fertig gesprochen'); }; u.onerror = function (e) { L('Fehler: ' + (e && e.error)); }; synth.speak(u); } catch (e) { L('Ausnahme: ' + msgOf(e)); } }
+        return;
+      }
+      L('Vorlese-Plugin gefunden. Prüfe Sprache en-GB ...');
+      tts.isLanguageSupported({ lang: 'en-GB' }).then(function (r) { L('en-GB unterstützt: ' + JSON.stringify(r)); }, function (e) { L('Sprachprüfung Fehler: ' + msgOf(e)); });
+      L('Sage "Hello, this is a test." ...');
+      tts.speak({ text: 'Hello, this is a test.', lang: 'en-GB', rate: 0.85, pitch: 1, volume: 1 })
+        .then(function () { L('Fertig gesprochen (ok)'); }, function (e) { L('Fehler beim Sprechen: ' + msgOf(e)); });
+      return;
+    }
+    if (kind === 'mic' || kind === 'miclive') {
+      if (!A.recogSupported()) { L('Keine Spracherkennung verfügbar.'); return; }
+      L('Sprich jetzt das Wort "bye" ...');
+      A.listen({ lang: 'en-GB', live: kind === 'miclive', log: L,
+        onState: function (st) { L('Status: ' + st); },
+        onPartial: function (t) { L('Live-Text: ' + t); } }, function (r) {
+        L(r.ok ? 'Verstanden: ' + r.matches.join(' | ') : 'Nichts erkannt (' + r.error + ')');
+      });
+      return;
+    }
   };
 })(window);

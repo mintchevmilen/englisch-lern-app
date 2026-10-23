@@ -3,6 +3,7 @@
    ============================================================= */
 (function (w) {
   var UI = w.UI;
+  w.APP_VERSION = '2.3.1';
 
   function route() {
     return (w.location.hash || '#/home').replace(/^#\/?/, '') || 'home';
@@ -46,10 +47,20 @@
   if (!w.location.hash) w.location.hash = '#/home';
   draw();
 
-  /* Service Worker: macht die App offline nutzbar. Nur ueber http(s). */
+  /* Service Worker: macht die Web-Version (PWA) offline nutzbar. In der Android-App
+     ist er unnoetig (alles liegt lokal) und kann nach einem Update alte Dateien
+     festhalten; dort wird ein evtl. vorhandener Service Worker samt Zwischenspeicher entfernt. */
+  var isNative = !!(w.Capacitor && w.Capacitor.isNativePlatform && w.Capacitor.isNativePlatform());
   if ('serviceWorker' in navigator && /^https?:$/.test(w.location.protocol)) {
-    w.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () { /* nicht kritisch */ });
-    });
+    if (isNative) {
+      try {
+        navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); });
+        if (w.caches && w.caches.keys) w.caches.keys().then(function (ks) { ks.forEach(function (k) { w.caches['delete'](k); }); });
+      } catch (e) { /* nicht kritisch */ }
+    } else {
+      w.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () { /* nicht kritisch */ });
+      });
+    }
   }
 })(window);

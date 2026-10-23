@@ -1,5 +1,10 @@
 # Changelog – English Adventure
 
+## 2.3.1 – 2026-10-23
+- Fix: Nach 2.3.0 funktionierten Erkennung und Vorlesen auf dem Handy nicht mehr. Ursachen, soweit sich ohne Gerät eingrenzen lässt: (1) Ein Fehler des Erkennungs-Plugins (z. B. „kein Treffer“) wurde fälschlich als „Erkennung nicht verfügbar“ gewertet und schaltete das Mikrofon ab; jetzt gilt das nur bei eindeutigen Fällen, sonst heißt es „nichts gehört“. (2) Die neue Live-Erkennung (Teilergebnisse über Plugin-Ereignisse) ist nicht mehr Standard, sondern ein Test-Schalter in den Eltern-Einstellungen; Standard ist wieder der einfache Modus aus 2.2.0, der bei dir funktioniert hat. (3) Das Erkennungs-Plugin wird nur noch angesprochen, wenn wirklich eine Aufnahme läuft. (4) In der Android-App wird ein evtl. vorhandener Service Worker samt Zwischenspeicher entfernt, damit nach Updates keine alten Dateien oder Plugin-Listen festhängen.
+- Neu: „Sprach-Diagnose“ in den Eltern-Einstellungen (Geräte-Info, Vorlesen testen, Mikrofon testen, Live testen). Zeigt Schritt für Schritt, was auf dem Gerät passiert, inklusive Fehlertexten.
+- Der Mikrofon-Knopf zeigt im einfachen Modus „Aufnahme läuft“ (rot, Pulsring), Wellen und Live-Text gibt es im Live-Modus.
+
 ## 2.3.0 – 2026-10-23
 - Sprechen deutlich sichtbar: großer Mikrofon-Knopf mit klaren Zuständen. Grün = bereit; rot mit Pulsring und Wellen = „Aufnahme läuft, sprich jetzt“; Wellen tanzen, sobald die App deine Stimme erkennt; gelb = „Einen Moment, ich werte aus“. Nochmal tippen bricht ab.
 - Live-Text: Während man spricht, erscheint groß, was die App gerade versteht.
