@@ -1,0 +1,9 @@
+{
+  "appId": "de.mintchev.englishadventure",
+  "appName": "English Adventure",
+  "webDir": "www",
+  "android": {
+    "useLegacyBridge": true,
+    "adjustMarginsForEdgeToEdge": "auto"
+  }
+}

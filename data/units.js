@@ -21,7 +21,7 @@
     disclaimer: 'Eigenstaendige Lern-App. Orientiert sich an Themen- und ' +
       'Grammatikbereichen des Lehrwerks. Keine Übungen, Beispielsätze oder ' +
       'Lesetexte aus dem Schulbuch übernommen.',
-    version: '2.0.0'
+    version: '2.1.0'
   };
 
   D.units = [
@@ -53,7 +53,7 @@
       color: '#7C3AED',
       intro: 'Schulfächer, Schulalltag, Uhrzeit, Regeln im Klassenzimmer',
       topics: ['Schulfächer & Schulorte', 'Tagesablauf', 'Uhrzeit', 'Monate & Datum', 'Klassenzimmerregeln'],
-      grammar: ['g_simplepresent', 'g_imperative', 'g_wordorder', 'g_irregular_plural', 'g_this_that']
+      grammar: ['g_simplepresent', 'g_imperative', 'g_wordorder', 'g_irregular_plural', 'g_this_that', 'g_object_pron']
     },
     {
       id: 'u3', no: 3,
@@ -63,7 +63,7 @@
       color: '#16A34A',
       intro: 'Hobbys, Schul-AGs, Interviews führen, Essen und Rezepte',
       topics: ['Hobbys & Freizeit', 'Schul-AGs', 'Fragen stellen', 'Essen & Rezepte', 'Mengenangaben'],
-      grammar: ['g_sp_questions', 'g_frequency', 'g_prepositions', 'g_countable_uncountable', 'g_much_many', 'g_wantto_haveto', 'g_object_pron']
+      grammar: ['g_sp_questions', 'g_frequency', 'g_prepositions', 'g_countable_uncountable', 'g_much_many', 'g_wantto_haveto']
     },
     {
       id: 'u4', no: 4,
@@ -71,8 +71,8 @@
       titleDe: 'Unterwegs in Brighton',
       titleConfirmed: true,
       color: '#0891B2',
-      intro: 'Wetter, was gerade passiert, Orte in der Nachbarschaft',
-      topics: ['Wetter', 'Am Strand / Meer', 'Beschreiben, was gerade passiert', 'Orte in der Nachbarschaft'],
+      intro: 'Wetter, was gerade passiert, Orte und Wege in der Nachbarschaft',
+      topics: ['Wetter', 'Sehenswürdigkeiten & Nachbarschaft', 'Beschreiben, was gerade passiert', 'Wegbeschreibungen', 'Ein Bild beschreiben'],
       grammar: ['g_progressive', 'g_prog_vs_simple']
     },
     {

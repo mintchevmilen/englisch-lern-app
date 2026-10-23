@@ -15,7 +15,7 @@ Orientiert an den Themen- und Grammatikbereichen von
 
 | Bereich | Inhalt |
 |---|---|
-| 📚 Vocabulary | 283 Wörter in 6 Units, mit Beispielsatz, Aussprache und 4 Übungsformen |
+| 📚 Vocabulary | 741 Wörter in 6 Units (echter Buchwortschatz), mit Beispielsatz, Aussprache und 4 Übungsformen |
 | 🧩 Grammar | 24 Grammatikbereiche mit *Learn → Practice → Challenge* und 221 Aufgaben |
 | 👂 Listening | Hörverständnis über die Sprachausgabe des Browsers |
 | 📖 Reading | Ein eigener kurzer Lesetext pro Unit mit Verständnisfragen |
@@ -130,6 +130,26 @@ var CACHE = 'english-adventure-v1';
 ```
 
 auf `v2`, `v3` … hochzählen.
+
+### 4.5 Native Android-APK (automatisch, ohne Play Store)
+
+Zusätzlich zur PWA baut GitHub bei jedem `git push` auf `main`/`master`
+automatisch eine echte Android-APK (per Capacitor + Gradle, siehe
+`.github/workflows/android.yml` – Vorlage von der Fitness-App übernommen).
+
+1. Normal pushen wie in 4.4.
+2. Auf GitHub → Reiter **Actions** den Lauf **Android-APK** abwarten
+   (ca. 5 Minuten).
+3. Unter **Releases** (rechte Seitenleiste des Repos) liegt danach eine
+   `english-adventure-<Version>-build<Nummer>.apk` zum Download.
+4. Am Handy: in Chrome bei GitHub anmelden, Release öffnen, `.apk`
+   herunterladen, antippen. Android fragt einmal, ob Chrome Apps
+   installieren darf – erlauben.
+5. Spätere APKs über die alte installieren (nicht deinstallieren!) –
+   der feste Signatur-Schlüssel in `android/keystore/` sorgt dafür, dass
+   das als Update erkannt wird und lokale Lerndaten erhalten bleiben.
+
+Technische Details und Entscheidungen: `docs/PROJEKTSTAND.md`.
 
 ---
 

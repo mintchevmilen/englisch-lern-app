@@ -1,0 +1,57 @@
+name: Android-APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # noetig, damit der Workflow ein Release anlegen darf
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: 21, cache: gradle }
+
+      - name: Abhaengigkeiten
+        run: npm ci
+      - name: Unit-Tests
+        run: npm test
+      - name: Build-Check (Daten-/Dateikonsistenz)
+        run: npm run build
+      - name: Capacitor sync
+        run: npx cap sync android
+      - name: APK bauen
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: APK benennen
+        id: apk
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          NAME="english-adventure-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Release erstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MSG=$(git log -1 --pretty=%s)
+          gh release create "v${{ steps.apk.outputs.version }}-build${GITHUB_RUN_NUMBER}" \
+            "${{ steps.apk.outputs.name }}" \
+            --title "English Adventure ${{ steps.apk.outputs.version }} (Build ${GITHUB_RUN_NUMBER})" \
+            --notes "Commit: ${MSG}" \
+            --prerelease

@@ -11,8 +11,8 @@
 
    Stand: Lesetexte, Alltagsenglisch und Schreibaufgaben wurden
    den echten Unit-Themen zugeordnet (Welcome bleibt, Familie/Zuhause
-   -> Unit 1, Schulalltag -> Unit 2, Strand/Wetter -> Unit 4,
-   Wochenende/Ausflüge -> Extra).
+   -> Unit 1, Schulalltag -> Unit 2, Hobbys/Freizeit -> Unit 3,
+   Wetter/Nachbarschaft -> Unit 4, Wochenende/Ausflüge -> Extra).
    ============================================================= */
 (function (w) {
   var D = w.DATA = w.DATA || {};
@@ -144,17 +144,17 @@
     ]
   },
 
-  /* ---- Unit 4: Out and about in Brighton -> Lesetext am Strand (present progressive) ---- */
+  /* ---- Unit 4: Out and about in Brighton -> Lesetext Nachbarschaft/Wetter (present progressive) ---- */
   u4:{
     reading:{
-      title:"On the pier",
-      text:"It is Saturday afternoon and we are at the seaside. The sun is shining and the wind is quite strong. My little brother is building a big sandcastle. He is not listening to me because he is very busy. My mum is sitting on a towel and she is reading a book. I am looking for shells but I cannot find any. Two seagulls are sitting on the wall. They are waiting for our chips! Now my dad is coming back with four ice creams. I am really happy.",
+      title:"Out and about",
+      text:"It is a cloudy Saturday afternoon and we are out and about in our neighbourhood. The wind is quite strong today. My little brother is following our dog down the pavement. He is not listening to me because he is very busy. My mum is standing outside the bakery and she is talking to a neighbour. I am looking for the key to our post box but I cannot find it. Two cats are hiding behind a bench. They are waiting for the rain to stop! Now my dad is coming back from the post office with a letter. I am really happy, because it is a nice walk.",
       qs:[
-        {t:"mc", q:"What is the little brother doing?", opts:["he is swimming","he is building a sandcastle","he is reading"], a:1, why:"My little brother is building a big sandcastle."},
-        {t:"mc", q:"What is mum doing?", opts:["she is reading a book","she is looking for shells","she is running"], a:0, why:"she is reading a book."},
-        {t:"mc", q:"What are the seagulls waiting for?", opts:["the boat","the chips","the sun"], a:1, why:"They are waiting for our chips!"},
-        {t:"mc", q:"How is the weather?", opts:["rainy and cold","sunny and windy","foggy"], a:1, why:"The sun is shining and the wind is quite strong."},
-        {t:"gap", q:"Dad is coming back with four ___ creams.", a:"ice", why:"my dad is coming back with four ice creams."}
+        {t:"mc", q:"What is the little brother doing?", opts:["he is reading","he is following the dog","he is hiding"], a:1, why:"My little brother is following our dog down the pavement."},
+        {t:"mc", q:"What is mum doing?", opts:["she is talking to a neighbour","she is looking for a key","she is running"], a:0, why:"she is talking to a neighbour."},
+        {t:"mc", q:"What are the cats waiting for?", opts:["the bus","the rain to stop","their food"], a:1, why:"They are waiting for the rain to stop!"},
+        {t:"mc", q:"How is the weather?", opts:["sunny and hot","cloudy and windy","snowy"], a:1, why:"It is a cloudy Saturday afternoon ... the wind is quite strong today."},
+        {t:"gap", q:"Dad is coming back from the post ___ .", a:"office", why:"my dad is coming back from the post office with a letter."}
       ]
     },
     everyday:[
@@ -162,16 +162,16 @@
       {en:"I am just looking, thanks.", de:"Ich schaue nur, danke."},
       {en:"It is a lovely day.", de:"Es ist ein schöner Tag."},
       {en:"Be careful!", de:"Sei vorsichtig!"},
-      {en:"Can I have an ice cream, please?", de:"Kann ich bitte ein Eis haben?"},
+      {en:"How much does this cost, please?", de:"Wie viel kostet das bitte?"},
       {en:"Wait for me!", de:"Warte auf mich!"},
-      {en:"I am afraid of big waves.", de:"Ich habe Angst vor großen Wellen."},
+      {en:"What's the matter?", de:"Was ist denn los?"},
       {en:"Look at that!", de:"Schau dir das an!"}
     ],
     writing:[
-      {t:"trans", de:"Die Sonne scheint.", a:"The sun is shining.", why:"The sun = it -> is + shining."},
-      {t:"trans", de:"Die Kinder spielen gerade am Strand.", a:"The children are playing on the beach.", why:"children = they -> are + playing."},
-      {t:"trans", de:"Ich suche mein Handtuch.", a:"I am looking for my towel.", alt:["I'm looking for my towel."], why:"gerade jetzt -> I am looking for."},
-      {t:"trans", de:"Es gibt keine Muscheln hier.", a:"There are not any shells here.", alt:["There aren't any shells here.","There are no shells here."], why:"Verneinung: not any."},
+      {t:"trans", de:"Es regnet gerade.", a:"It is raining.", why:"It -> is + raining."},
+      {t:"trans", de:"Die Kinder spielen gerade auf dem Gehweg.", a:"The children are playing on the pavement.", why:"children = they -> are + playing."},
+      {t:"trans", de:"Ich suche meinen Schlüssel.", a:"I am looking for my key.", alt:["I'm looking for my key."], why:"gerade jetzt -> I am looking for."},
+      {t:"trans", de:"Es gibt hier keine Briefkästen.", a:"There are not any post boxes here.", alt:["There aren't any post boxes here.","There are no post boxes here."], why:"Verneinung: not any."},
       {t:"trans", de:"Was machst du gerade?", a:"What are you doing?", why:"Fragewort + are + you + Verb mit -ing."}
     ]
   },

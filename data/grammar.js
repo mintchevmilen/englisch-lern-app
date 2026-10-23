@@ -592,7 +592,7 @@
   },
 
   g_object_pron:{
-    unit:"u3", title:"Object pronouns", titleDe:"me, you, him, her ...",
+    unit:"u2", title:"Object pronouns", titleDe:"me, you, him, her ...",
     learn:{
       intro:"Objektpronomen stehen nach dem Verb oder nach einer Praeposition.",
       rules:[
