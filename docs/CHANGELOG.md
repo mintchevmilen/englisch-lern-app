@@ -1,5 +1,11 @@
 # Changelog – English Adventure
 
+## 2.4.0 – 2026-10-23
+- Neu: Kursleiste ganz oben (wie bei Duolingo). Tippen auf den Kursnamen öffnet die Auswahl: „Englisch 5. Klasse“ und „Mathe 5. Klasse“. Die App merkt sich den zuletzt genutzten Kurs.
+- Mathe 5. Klasse (Mathe Mission 5, Hessen G9) ist jetzt als zweiter Kurs eingebaut. Lernpfad, Klassenarbeits-Modus, Spiele und Elternbereich funktionieren wie in der eigenen Mathe-App. Fortschritt wird getrennt gespeichert, Englisch bleibt unverändert.
+- Aufgaben der Mathe-App überarbeitet: unlogische Fälle behoben (Ziffer 0 als Stellenwert, Rechengesetz bei gleichen Zahlen, widersprüchliche Einheiten, unrealistische Uhrzeiten, Ergebnis 0 bei Teilschritten), mehr Abwechslung bei Geometrie und Körpern. 40 automatische Tests prüfen alle Mathe-Generatoren.
+- Technisch: Mathe liegt als eigenständiger Ordner `mathe/` (in Root und `www/`) und läuft in einem eingebetteten Rahmen. Quelle bleibt das Repo `mathe-mission-5`; Änderungen dort müssen nach `mathe/` kopiert werden.
+
 ## 2.3.1 – 2026-10-23
 - Fix: Nach 2.3.0 funktionierten Erkennung und Vorlesen auf dem Handy nicht mehr. Ursachen, soweit sich ohne Gerät eingrenzen lässt: (1) Ein Fehler des Erkennungs-Plugins (z. B. „kein Treffer“) wurde fälschlich als „Erkennung nicht verfügbar“ gewertet und schaltete das Mikrofon ab; jetzt gilt das nur bei eindeutigen Fällen, sonst heißt es „nichts gehört“. (2) Die neue Live-Erkennung (Teilergebnisse über Plugin-Ereignisse) ist nicht mehr Standard, sondern ein Test-Schalter in den Eltern-Einstellungen; Standard ist wieder der einfache Modus aus 2.2.0, der bei dir funktioniert hat. (3) Das Erkennungs-Plugin wird nur noch angesprochen, wenn wirklich eine Aufnahme läuft. (4) In der Android-App wird ein evtl. vorhandener Service Worker samt Zwischenspeicher entfernt, damit nach Updates keine alten Dateien oder Plugin-Listen festhängen.
 - Neu: „Sprach-Diagnose“ in den Eltern-Einstellungen (Geräte-Info, Vorlesen testen, Mikrofon testen, Live testen). Zeigt Schritt für Schritt, was auf dem Gerät passiert, inklusive Fehlertexten.

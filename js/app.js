@@ -3,7 +3,7 @@
    ============================================================= */
 (function (w) {
   var UI = w.UI;
-  w.APP_VERSION = '2.3.1';
+  w.APP_VERSION = '2.4.0';
 
   function route() {
     return (w.location.hash || '#/home').replace(/^#\/?/, '') || 'home';
@@ -42,6 +42,55 @@
   document.getElementById('backBtn').addEventListener('click', function () {
     if (history.length > 1) history.back(); else UI.go('home');
   });
+
+  /* ---------- Kurse (Englisch / Mathe), Kursleiste oben ---------- */
+  var COURSES = {
+    englisch: { name: 'Englisch 5. Klasse', ico: '\uD83C\uDDEC\uD83C\uDDE7' },
+    mathe:    { name: 'Mathe 5. Klasse',    ico: '\u2795' }
+  };
+  var course = 'englisch';
+  var courseMenu = document.getElementById('coursemenu');
+  var courseBtn = document.getElementById('courseBtn');
+  var mathFrame = document.getElementById('mathFrame');
+
+  function closeCourseMenu() { courseMenu.hidden = true; courseBtn.setAttribute('aria-expanded', 'false'); }
+
+  function setCourse(id, remember) {
+    if (!COURSES[id]) id = 'englisch';
+    course = id;
+    document.body.classList.toggle('course-mathe', id === 'mathe');
+    document.getElementById('courseName').textContent = COURSES[id].name;
+    document.getElementById('courseIco').textContent = COURSES[id].ico;
+    Array.prototype.forEach.call(courseMenu.querySelectorAll('[data-course]'), function (b) {
+      b.classList.toggle('is-on', b.getAttribute('data-course') === id);
+    });
+    if (id === 'mathe') {
+      if (!mathFrame.getAttribute('src')) mathFrame.setAttribute('src', 'mathe/index.html');
+      mathFrame.hidden = false;
+      if (w.Speech && w.Speech.stop) { try { w.Speech.stop(); } catch (e) { /* egal */ } }
+    } else {
+      mathFrame.hidden = true;
+    }
+    if (remember) { try { w.localStorage.setItem('ea-course', id); } catch (e) { /* egal */ } }
+    closeCourseMenu();
+  }
+
+  courseBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = courseMenu.hidden;
+    courseMenu.hidden = !open;
+    courseBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  courseMenu.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-course]') : null;
+    if (b) setCourse(b.getAttribute('data-course'), true);
+    e.stopPropagation();
+  });
+  document.addEventListener('click', closeCourseMenu);
+
+  var saved = 'englisch';
+  try { saved = w.localStorage.getItem('ea-course') || 'englisch'; } catch (e) { /* egal */ }
+  setCourse(saved, false);
 
   /* Erststart */
   if (!w.location.hash) w.location.hash = '#/home';

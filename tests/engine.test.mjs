@@ -25,7 +25,8 @@ const word = (en) => SRS.all().find((x) => x.en === en);
 test('www/ und Repo-Root sind identisch (GitHub Pages und APK zeigen dasselbe)', () => {
   const files = ['index.html', 'css/style.css', 'js/app.js', 'js/audio.js', 'js/engine.js',
     'js/games.js', 'js/player.js', 'js/srs.js', 'js/storage.js', 'js/ui.js',
-    'data/units.js', 'data/vocabulary.js', 'data/grammar.js', 'data/content.js'];
+    'data/units.js', 'data/vocabulary.js', 'data/grammar.js', 'data/content.js',
+    'mathe/index.html', 'mathe/css/app.css', 'mathe/js/data.js', 'mathe/js/gen.js', 'mathe/js/state.js', 'mathe/js/ui.js', 'mathe/js/exam.js', 'mathe/js/games.js', 'mathe/js/app.js'];
   for (const f of files) {
     assert.ok(existsSync(path.join(ROOT, f)), `Root fehlt: ${f}`);
     assert.equal(readFileSync(path.join(ROOT, f), 'utf8'), readFileSync(path.join(WWW, f), 'utf8'),

@@ -14,6 +14,20 @@
 <body>
 
 <div id="app">
+  <div id="coursebar" class="coursebar">
+    <button id="courseBtn" class="coursebar__btn" type="button" aria-haspopup="true" aria-expanded="false">
+      <span id="courseIco" class="coursebar__ico">&#127468;&#127463;</span>
+      <span id="courseName">Englisch 5. Klasse</span>
+      <span class="coursebar__caret">&#9662;</span>
+    </button>
+  </div>
+  <div id="coursemenu" class="coursemenu" hidden>
+    <div class="coursemenu__head">Kurs wechseln</div>
+    <button class="coursemenu__item" data-course="englisch" type="button"><span class="coursebar__ico">&#127468;&#127463;</span><span><b>Englisch 5. Klasse</b><small>Access 1, Vokabeln, Grammatik, Sprechen</small></span></button>
+    <button class="coursemenu__item" data-course="mathe" type="button"><span class="coursebar__ico">&#10134;</span><span><b>Mathe 5. Klasse</b><small>Hessen G9, Lernpfad, Klassenarbeit</small></span></button>
+    <div class="coursemenu__more">Weitere Kurse können später dazukommen.</div>
+  </div>
+  <iframe id="mathFrame" class="mathframe" title="Mathe 5. Klasse" hidden></iframe>
   <header id="topbar" class="topbar">
     <button id="backBtn" class="topbar__back" type="button" aria-label="Zurück" hidden>&#8592;</button>
     <div class="topbar__title" id="topTitle">English Adventure</div>

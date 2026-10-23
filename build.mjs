@@ -24,7 +24,8 @@ const REQUIRED_FILES = [
   'data/units.js', 'data/vocabulary.js', 'data/grammar.js', 'data/content.js',
   'js/storage.js', 'js/srs.js', 'js/audio.js', 'js/engine.js',
   'js/player.js', 'js/games.js', 'js/ui.js', 'js/app.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon.svg'
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon.svg',
+  'mathe/index.html', 'mathe/css/app.css', 'mathe/js/data.js', 'mathe/js/gen.js', 'mathe/js/state.js', 'mathe/js/ui.js', 'mathe/js/exam.js', 'mathe/js/games.js', 'mathe/js/app.js'
 ];
 
 let failed = false;

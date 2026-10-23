@@ -1,0 +1,165 @@
+/* Mathe Mission 5 — Stylesheet (mobil, Hochformat, ohne externe Abhängigkeiten) */
+:root{
+  --bg:#eef1f8; --card:#ffffff; --txt:#1b2137; --muted:#6b7490; --line:#dfe4f0;
+  --pri:#4f7cff; --pri-d:#3a63e0; --ok:#2fb673; --warn:#f0972a; --bad:#e0567a;
+  --shadow:0 2px 10px rgba(28,40,80,.08);
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#12151f; --card:#1c2030; --txt:#eef1f8; --muted:#98a1ba; --line:#2b3145;
+         --shadow:0 2px 12px rgba(0,0,0,.35); }
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+body{
+  background:var(--bg); color:var(--txt); font-size:16px; line-height:1.45;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-text-size-adjust:100%; overscroll-behavior-y:contain;
+}
+#app{ max-width:520px; margin:0 auto; padding:12px 12px 84px; }
+h1,h2,h3{ margin:0 0 8px; line-height:1.2; }
+h1{ font-size:23px; } h2{ font-size:18px; } h3{ font-size:15px; }
+p{ margin:0 0 10px; }
+.small{ font-size:13px; color:var(--muted); }
+.center{ text-align:center; }
+.hide{ display:none !important; }
+
+/* Kopfzeile */
+.top{ display:flex; align-items:center; gap:10px; margin:4px 0 14px; }
+.top .back{ background:var(--card); border:1px solid var(--line); border-radius:12px;
+  width:40px; height:40px; font-size:19px; color:var(--txt); flex:0 0 auto; }
+.top .title{ flex:1; min-width:0; }
+.top .title b{ display:block; font-size:17px; }
+.top .title span{ display:block; font-size:12px; color:var(--muted); }
+
+/* Karten */
+.card{ background:var(--card); border-radius:var(--r); padding:14px; margin-bottom:12px; box-shadow:var(--shadow); }
+.card.tight{ padding:12px; }
+.row{ display:flex; align-items:center; gap:10px; }
+.row.between{ justify-content:space-between; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* Statuszeile */
+.hud{ display:flex; gap:8px; margin-bottom:12px; }
+.hud div{ flex:1; background:var(--card); border-radius:14px; padding:9px 6px; text-align:center; box-shadow:var(--shadow); }
+.hud b{ display:block; font-size:17px; }
+.hud span{ font-size:11px; color:var(--muted); }
+
+/* Fortschrittsbalken */
+.bar{ height:10px; background:var(--line); border-radius:99px; overflow:hidden; }
+.bar > i{ display:block; height:100%; background:var(--pri); border-radius:99px; transition:width .45s ease; }
+.bar.ok > i{ background:var(--ok); } .bar.warn > i{ background:var(--warn); } .bar.bad > i{ background:var(--bad); }
+.bar.sm{ height:7px; }
+
+/* Buttons */
+button{ font-family:inherit; font-size:16px; cursor:pointer; }
+.btn{ display:block; width:100%; border:0; border-radius:14px; padding:15px 14px; font-weight:700;
+  background:var(--pri); color:#fff; margin-bottom:10px; box-shadow:0 3px 0 var(--pri-d); text-align:center; }
+.btn:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--pri-d); }
+.btn.ghost{ background:var(--card); color:var(--txt); border:1px solid var(--line); box-shadow:var(--shadow); font-weight:600; }
+.btn.alarm{ background:var(--bad); box-shadow:0 3px 0 #b8425f; }
+.btn.go{ background:var(--ok); box-shadow:0 3px 0 #24915b; }
+.btn.sm{ padding:10px; font-size:14px; margin-bottom:0; }
+.btn[disabled]{ opacity:.5; }
+
+/* Auswahl-Optionen */
+.opt{ display:block; width:100%; text-align:left; background:var(--card); color:var(--txt);
+  border:2px solid var(--line); border-radius:14px; padding:14px; margin-bottom:9px; font-weight:600; }
+.opt:active{ border-color:var(--pri); }
+.opt.sel{ border-color:var(--pri); background:rgba(79,124,255,.10); }
+.opt.right{ border-color:var(--ok); background:rgba(47,182,115,.14); }
+.opt.wrong{ border-color:var(--bad); background:rgba(224,86,122,.14); }
+
+/* Eingabe */
+input[type=text], input[type=number], input[type=date], select{
+  width:100%; padding:14px; font-size:19px; font-family:inherit; border:2px solid var(--line);
+  border-radius:14px; background:var(--card); color:var(--txt); text-align:center; }
+input:focus{ outline:none; border-color:var(--pri); }
+.inputrow{ display:flex; align-items:center; gap:8px; }
+.inputrow .einheit{ font-size:17px; font-weight:700; color:var(--muted); flex:0 0 auto; }
+
+/* Aufgabe */
+.frage{ font-size:19px; font-weight:600; margin-bottom:12px; }
+.gsvg{ width:100%; max-width:300px; height:auto; display:block; margin:6px auto 12px; color:var(--txt); }
+.tipp{ font-size:13px; color:var(--muted); margin-top:8px; }
+
+/* Rückmeldung */
+.fb{ border-radius:14px; padding:13px; margin-bottom:12px; font-size:15px; }
+.fb.ok{ background:rgba(47,182,115,.15); border:1px solid var(--ok); }
+.fb.no{ background:rgba(224,86,122,.13); border:1px solid var(--bad); }
+.fb b{ display:block; margin-bottom:4px; font-size:16px; }
+
+/* Kapitel-Liste */
+.kap{ display:flex; align-items:center; gap:12px; background:var(--card); border-radius:var(--r);
+  padding:13px; margin-bottom:10px; box-shadow:var(--shadow); width:100%; border:0; text-align:left; color:var(--txt); }
+.kap .ic{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center;
+  justify-content:center; font-size:22px; flex:0 0 auto; background:rgba(79,124,255,.14); }
+.kap .mid{ flex:1; min-width:0; }
+.kap .mid b{ display:block; font-size:15px; }
+.kap .mid .bar{ margin-top:6px; }
+.kap .pct{ font-size:13px; font-weight:700; color:var(--muted); flex:0 0 auto; }
+
+/* Thema-Zeile */
+.thema{ display:flex; align-items:center; gap:10px; width:100%; background:var(--card); border:0;
+  border-radius:14px; padding:12px; margin-bottom:8px; box-shadow:var(--shadow); text-align:left; color:var(--txt); }
+.thema .dot{ font-size:15px; flex:0 0 auto; }
+.thema .mid{ flex:1; min-width:0; }
+.thema .mid b{ display:block; font-size:14.5px; font-weight:650; }
+.thema .mid span{ font-size:12px; color:var(--muted); }
+
+/* Chips */
+.chip{ display:inline-block; padding:5px 11px; border-radius:99px; background:var(--line);
+  font-size:13px; margin:0 6px 6px 0; }
+.chip.on{ background:var(--pri); color:#fff; }
+.chip.gruen{ background:rgba(47,182,115,.2); } .chip.gelb{ background:rgba(240,151,42,.22); }
+.chip.rot{ background:rgba(224,86,122,.2); }
+
+/* Brüche & Mathe */
+.frac{ display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center;
+  margin:0 3px; line-height:1.1; }
+.frac .fz{ border-bottom:2px solid currentColor; padding:0 4px; }
+.frac .fn{ padding:0 4px; }
+sup{ font-size:.68em; vertical-align:super; }
+
+/* Schritte (Rechenweg) */
+.schritt{ border-left:3px solid var(--pri); padding:4px 0 4px 10px; margin-bottom:10px; }
+.schritt.done{ border-color:var(--ok); opacity:.65; }
+
+/* Tabelle Elternbereich */
+table{ width:100%; border-collapse:collapse; font-size:14px; }
+td,th{ padding:7px 4px; border-bottom:1px solid var(--line); text-align:left; }
+th{ font-size:12px; color:var(--muted); font-weight:600; }
+td.num{ text-align:right; font-variant-numeric:tabular-nums; }
+
+/* Spiele */
+.spielfeld{ min-height:210px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.zahlgross{ font-size:34px; font-weight:800; margin:8px 0 14px; }
+.timer{ font-variant-numeric:tabular-nums; font-weight:700; }
+.puzzle-item{ background:var(--card); border:2px solid var(--line); border-radius:12px; padding:12px;
+  margin-bottom:8px; font-weight:600; width:100%; text-align:left; color:var(--txt); }
+.puzzle-item.sel{ border-color:var(--pri); }
+
+/* Toast / Level-up */
+.toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:var(--txt);
+  color:var(--bg); padding:12px 18px; border-radius:99px; font-weight:700; font-size:14px;
+  z-index:60; box-shadow:0 6px 20px rgba(0,0,0,.25); animation:pop .3s ease; max-width:92%; text-align:center; }
+@keyframes pop{ from{ transform:translate(-50%,12px); opacity:0; } to{ transform:translate(-50%,0); opacity:1; } }
+.pulse{ animation:pl .5s ease; }
+@keyframes pl{ 0%{transform:scale(1);} 50%{transform:scale(1.06);} 100%{transform:scale(1);} }
+
+/* Erfolge */
+.erf{ display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+.erf .ic{ font-size:24px; width:36px; text-align:center; }
+.erf.locked{ opacity:.38; }
+
+/* Plan */
+.plantag{ display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line); }
+.plantag .nr{ width:34px; height:34px; border-radius:10px; background:rgba(79,124,255,.14);
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex:0 0 auto; }
+.plantag.done .nr{ background:rgba(47,182,115,.2); }
+.plantag .mid b{ display:block; font-size:14.5px; }
+.plantag .mid span{ font-size:12.5px; color:var(--muted); }
+
+/* Prüfungskopf */
+.pruef{ position:sticky; top:0; z-index:20; background:var(--bg); padding:8px 0 10px; margin:-12px 0 6px; }
+.pruef .row{ font-size:13px; color:var(--muted); margin-bottom:6px; }
