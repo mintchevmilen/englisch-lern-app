@@ -176,9 +176,10 @@ test('Sprachbewertung: Zahlen, to, Kurzformen, Phrasen', () => {
   assert.equal(E.speechScore(['ask'], 'to ask').level, 2);
   assert.equal(E.speechScore(['to ask'], 'to ask').level, 2);
   assert.equal(E.speechScore(['I am from Germany'], "I'm from Germany").level, 2);
-  assert.equal(E.speechScore(['nice to meet'], 'nice to meet you').level, 0, '3 von 4 Woertern reichen nicht');
+  assert.equal(E.speechScore(['nice to meet'], 'nice to meet you').level, 1, '3 von 4 Woertern reichen (Kinder-Toleranz)');
+  assert.equal(E.speechScore(['nice to'], 'nice to meet you').level, 0, '2 von 4 reichen nicht');
   assert.equal(E.speechScore(['how old are you'], 'how old are you').level, 2);
-  assert.equal(E.speechScore(['how old are'], 'how old are you').level, 0);
+  assert.equal(E.speechScore(['how old are'], 'how old are you').level, 1);
   assert.equal(E.speechScore(['hello hello hello hello'], 'hello').level, 0, 'Gebrabbel zaehlt nicht');
 });
 
@@ -190,4 +191,45 @@ test('Sprachaufgaben enthalten keine Platzhalter-Woerter', () => {
       assert.equal(t.kind, 'repeat');
     }
   }
+});
+
+/* ---------- Toleranz fuer Kinderaussprache ---------- */
+test('Gleichklang zaehlt als richtig (bye/buy, to/two, hello/hallo)', () => {
+  assert.equal(E.speechScore(['buy'], 'bye').level, 2);
+  assert.equal(E.speechScore(['bei'], 'bye').level, 2, 'deutsch klingendes "bei" fuer bye');
+  assert.equal(E.speechScore(['two'], 'to').level, 2);
+  assert.equal(E.speechScore(['hallo'], 'hello').level, 2);
+  assert.equal(E.speechScore(['tree'], 'three').level, 2, 'th wird oft als t/s gesprochen');
+  assert.equal(E.speechScore(['ve'], 'we').level, 2, 'w wird oft als v gesprochen');
+});
+
+test('Wiederholtes Wort ("bye bye") ist ok, Gebrabbel nicht', () => {
+  assert.equal(E.speechScore(['bye bye'], 'bye').level, 1);
+  assert.equal(E.speechScore(['hello hello hello hello'], 'hello').level, 0);
+});
+
+test('Aehnlicher Klang bei laengeren Woertern wird akzeptiert, kurze Woerter nicht verwechselt', () => {
+  assert.equal(E.speechScore(['sank you'], 'thank you').level, 2);
+  assert.equal(E.speechScore(['mondeh'], 'Monday').level, 1);
+  assert.equal(E.speechScore(['cut'], 'cat').level, 0, 'cat/cut/bat sind verschiedene Woerter');
+  assert.equal(E.speechScore(['bat'], 'cat').level, 0);
+});
+
+test('Ergebnis nennt Alternativen fuer die Anzeige', () => {
+  const r = E.speechScore(['banana', 'bandana', 'bonanza'], 'Monday');
+  assert.equal(r.level, 0);
+  assert.equal(r.heard, 'banana');
+  assert.deepEqual(r.alts, ['bandana', 'bonanza']);
+});
+
+test('Zahlen aus dem Erkenner werden zu Woertern (fuer englische Tippaufgaben)', () => {
+  assert.equal(E.digitsToWords('I have 2 cats'), 'I have two cats');
+  assert.equal(E.digitsToWords('5'), 'five');
+  assert.equal(E.digitsToWords('2026'), '2026');
+});
+
+test('Gesprochene deutsche Antwort wird wie getippte geprueft', () => {
+  const town = E.vocabTasks([word('town')], ['trans'], 1)[0];
+  assert.equal(E.check('Stadt', town), 2);
+  assert.equal(E.check('stadt', town), 2, 'Gross-/Kleinschreibung egal');
 });

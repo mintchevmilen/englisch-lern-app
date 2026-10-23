@@ -225,3 +225,42 @@ ul,ol{padding:0;list-style:none}
 .empty__ico{font-size:34px;display:block;margin-bottom:8px}
 
 @media (min-width:420px){ :root{--pad:16px} .question{font-size:24px} }
+
+/* ---------- Sprechen / Mikrofon ----------
+   Zustaende am #micbox: is-idle (bereit), is-waiting (Aufnahme laeuft, noch keine Stimme),
+   is-speaking (Stimme wird erkannt), is-processing (Auswertung), is-done (geschafft).
+   Nur transform/opacity werden animiert (laeuft auch auf aelteren Geraeten fluessig). */
+.micbox{margin-top:14px;text-align:center}
+.micbox--row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;text-align:left}
+.micbox__txt{flex:1;min-width:0}
+.micbox--row #micres{flex:0 0 100%}
+.mic{position:relative;width:96px;height:96px;border-radius:50%;background:var(--green);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 3px 0 #15803D}
+.mic--sm{width:56px;height:56px;flex:0 0 56px;font-size:24px}
+.mic:active{transform:scale(.96)}
+.mic .wave{display:none}
+.mic::after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;border:3px solid var(--red);opacity:0;pointer-events:none}
+.is-waiting .mic,.is-speaking .mic{background:var(--red);box-shadow:0 3px 0 #991B1B}
+.is-processing .mic{background:var(--amber);box-shadow:0 3px 0 #B45309}
+.is-waiting .mic__ico,.is-speaking .mic__ico,.is-processing .mic__ico{display:none}
+.is-waiting .mic .wave,.is-speaking .mic .wave,.is-processing .mic .wave{display:flex}
+.is-waiting .mic::after,.is-speaking .mic::after{animation:micring 1.2s ease-out infinite}
+.wave{align-items:center;gap:3px;height:44px}
+.mic--sm .wave{height:30px;gap:2px;transform:scale(.7)}
+.wave i{display:block;width:5px;height:10px;border-radius:3px;background:#fff}
+.is-waiting .wave i{animation:wavelow 1.5s ease-in-out infinite}
+.is-speaking .wave i{animation:wave .55s ease-in-out infinite}
+.is-processing .wave i{animation:wavelow 2.2s ease-in-out infinite;opacity:.85}
+.wave i:nth-child(2){animation-delay:.11s}.wave i:nth-child(3){animation-delay:.23s}
+.wave i:nth-child(4){animation-delay:.05s}.wave i:nth-child(5){animation-delay:.17s}
+.wave i:nth-child(6){animation-delay:.29s}.wave i:nth-child(7){animation-delay:.08s}
+@keyframes wave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(3.8)}}
+@keyframes wavelow{0%,100%{transform:scaleY(.6)}50%{transform:scaleY(1.3)}}
+@keyframes micring{from{transform:scale(1);opacity:.75}to{transform:scale(1.55);opacity:0}}
+.mic__label{margin-top:8px;font-weight:700;font-size:14.5px;color:var(--ink-2)}
+.micbox--row .mic__label{margin-top:0;font-size:13.5px}
+.is-waiting .mic__label,.is-speaking .mic__label{color:var(--red)}
+.live{min-height:28px;margin-top:6px;font-size:20px;font-weight:800;color:var(--blue-800);word-break:break-word}
+.micbox--row .live{font-size:17px;min-height:24px}
+.fb--soft{background:var(--amber-l);border:1px solid #FCD34D}
+.fb--soft .fb__a{color:#92400E}

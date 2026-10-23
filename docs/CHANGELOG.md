@@ -1,5 +1,14 @@
 # Changelog – English Adventure
 
+## 2.3.0 – 2026-10-23
+- Sprechen deutlich sichtbar: großer Mikrofon-Knopf mit klaren Zuständen. Grün = bereit; rot mit Pulsring und Wellen = „Aufnahme läuft, sprich jetzt“; Wellen tanzen, sobald die App deine Stimme erkennt; gelb = „Einen Moment, ich werte aus“. Nochmal tippen bricht ab.
+- Live-Text: Während man spricht, erscheint groß, was die App gerade versteht.
+- Ergebnis gut lesbar: Bei „Fast“ steht groß, was verstanden wurde, darunter das gesuchte Wort und weitere gehörte Alternativen. „Nichts gehört“ wird eigens angezeigt. Nach zwei Fehlversuchen erscheint „Weiter ✓ (das üben wir später)“, damit niemand festhängt.
+- Toleranz für Kinder deutlich erhöht: Gleichklang-Gruppen (bye/buy/by/„bei“, to/two/too, hello/hallo, no/know …), typische deutsche Aussprache (th→t/s: three/tree, w→v: we/ve), mehr Buchstaben-Abweichung bei längeren Wörtern, Phrasen reichen bei 2 von 3 Wörtern (Wiederholungen wie „bye bye“ sind ok). Kurze Wörter wie cat/cut/bat bleiben getrennt.
+- Sprache: wird von der App ausdrücklich gesetzt, nicht vom Handy übernommen. Englisch beim Nachsprechen und bei Aufgaben mit englischer Antwort, Deutsch („de-DE“) bei „Übersetze ins Deutsche“.
+- Neu: Antworten bei Tippaufgaben lassen sich auch sprechen (Mikrofon unter dem Eingabefeld). Der erkannte Text landet im Eingabefeld, man prüft und tippt auf „Prüfen“. Zahlen wie „5“ werden bei englischen Aufgaben zu „five“.
+- Intern: Erkennung im Live-Modus (Teilergebnisse und Start/Ende-Signale vom Plugin), automatische Zeitlimits (7 s ohne Stimme, 16 s gesamt), Aufräumen der Plugin-Listener. Weitere Tests (28 insgesamt).
+
 ## 2.2.0 – 2026-10-23
 - Neu: Spracherkennung beim Nachsprechen (Speaking-Lektion). Die App hört zu, vergleicht mit dem Zielwort und gibt Rückmeldung („Perfekt!“, „Gut!“ oder was verstanden wurde, mit Nochmal-Versuch). APK: natives Plugin `@capacitor-community/speech-recognition` (fragt beim ersten Mal nach der Mikrofon-Erlaubnis); Browser/PWA: Web Speech API. Die Bewertung ist bewusst großzügig (Alternativen des Erkenners, kleine Abweichungen, Zahlen, „to“ bei Verben).
 - Nachsprechen bleibt ohne Risiko: „Ohne Mikrofon weiter“ zählt wie früher als gesagt; Erkennungsfehler werden nie als falsch gewertet. Bei verweigertem Mikrofon oder fehlender Erkennung fällt die App automatisch auf die bisherige Selbstkontrolle zurück. In den Einstellungen (Eltern) gibt es einen Schalter „Mikrofon beim Nachsprechen“.

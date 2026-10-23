@@ -62,7 +62,7 @@
   }
 
   function render() {
-    w.Speech.stopListening();
+    w.Speech.stopListening(); listening = false; fails = 0;
     if (idx >= tasks.length) return finish();
     var t = tasks[idx];
     answered = false; retry = false;
@@ -100,13 +100,11 @@
             (t.ex ? '<button class="btn btn--ghost btn--sm" data-act="speak-ex" type="button">🔊 Satz</button>' : '') +
           '</div>' +
         '</div>' +
-        (mic
-          ? '<div id="micbox" class="mt"><button class="btn btn--green" data-act="mic" type="button">🎤 Jetzt sprechen</button></div>' +
-            '<p class="tiny center" id="micmsg">Tippe auf das Mikrofon und sprich das Wort laut nach.</p>'
-          : '<p class="tiny center">Sprich das Wort laut nach. Danach tippe auf „Gesagt“.</p>');
+        (mic ? micBox(false, 'Tippe auf das Mikrofon und sprich auf Englisch.')
+             : '<p class="tiny center mt">Sprich das Wort laut nach. Danach tippe auf „Gesagt“.</p>');
       host.innerHTML = header() + '<div class="play__body">' + body + '</div>' +
         '<div class="play__foot">' +
-          (mic ? '<button class="btn btn--ghost" data-act="said" type="button">Ohne Mikrofon weiter</button>'
+          (mic ? '<button class="btn btn--ghost" data-act="said" type="button">Überspringen</button>'
                : '<button class="btn btn--green" data-act="said" type="button">✓ Gesagt</button>') +
         '</div>';
       bind();
@@ -139,6 +137,7 @@
         '<div class="mt"><input class="input" id="ans" type="text" autocomplete="off" autocorrect="off" ' +
           'autocapitalize="off" spellcheck="false" placeholder="' + esc(t.ph || '') + '" ' +
           (t.de ? 'lang="de"' : 'lang="en"') + '></div>' +
+        (micAvailable() ? micBox(true, 'Oder sprich auf ' + (t.de ? 'Deutsch' : 'Englisch') + '.') : '') +
         /* Der Pruefen-Knopf steht direkt unter dem Eingabefeld, damit ihn die
            Android-Tastatur nicht verdeckt. */
         '<div class="mt"><button class="btn" data-act="submit" type="button">Prüfen</button></div>';
@@ -164,46 +163,132 @@
     }
   }
 
-  /* ---------------- Nachsprechen mit Spracherkennung ---------------- */
+  /* ---------------- Sprechen (Spracherkennung) ---------------- */
+  var listening = false, fails = 0;
+
   function micAvailable() {
     return !micOff && w.Speech.recogSupported() && S.data().settings.mic !== false;
   }
 
-  function setMic(html, msg) {
-    var box = host && host.querySelector('#micbox'), m = host && host.querySelector('#micmsg');
-    if (box && html != null) box.innerHTML = html;
-    if (m && msg != null) m.innerHTML = msg;
+  /* Mikrofon-Bereich. small=true: schmale Zeile neben/unter dem Eingabefeld. */
+  function micBox(small, label) {
+    var wave = '<span class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>';
+    return '<div id="micbox" class="micbox' + (small ? ' micbox--row' : '') + ' is-idle">' +
+      '<button class="mic' + (small ? ' mic--sm' : '') + '" data-act="' + (small ? 'vmic' : 'mic') + '" type="button" aria-label="Sprechen">' +
+        '<span class="mic__ico">🎤</span>' + wave + '</button>' +
+      '<div class="micbox__txt"><div class="mic__label" id="miclabel">' + esc(label) + '</div>' +
+        '<div class="live" id="live"></div></div>' +
+      '<div id="micres"></div></div>';
   }
-  var BTN_MIC = '<button class="btn btn--green" data-act="mic" type="button">🎤 Jetzt sprechen</button>';
-  var BTN_AGAIN = '<button class="btn btn--green" data-act="mic" type="button">🎤 Noch einmal sprechen</button>';
 
-  function listen(t) {
+  var STATE_TXT = {
+    idle: null,
+    waiting: '🔴 Aufnahme läuft. Sprich jetzt!',
+    speaking: '🔴 Ich höre dich …',
+    processing: '⏳ Einen Moment, ich werte aus …'
+  };
+  function setMicState(st, label) {
+    var box = host && host.querySelector('#micbox'); if (!box) return;
+    box.className = box.className.replace(/\bis-\w+\b/g, '').replace(/\s+/g, ' ') + ' is-' + st;
+    var l = host.querySelector('#miclabel');
+    if (l && (label || STATE_TXT[st])) l.textContent = label || STATE_TXT[st];
+  }
+  function setLive(txt) { var e = host && host.querySelector('#live'); if (e) e.textContent = txt || ''; }
+  function setRes(html) { var e = host && host.querySelector('#micres'); if (e) e.innerHTML = html || ''; }
+
+  /* Eine Aufnahme starten. onResult(r) bekommt das Ergebnis der Erkennung. */
+  function runListen(lang, onResult) {
+    if (listening) {                                      // nochmal tippen = abbrechen
+      listening = false; w.Speech.stopListening(); setMicState('idle', 'Abgebrochen. Tippe zum Neustart.'); return;
+    }
+    var myIdx = idx, t = tasks[idx];
+    function valid() { return cfg && idx === myIdx && tasks[idx] === t && !answered; }
+    listening = true; setRes(''); setLive(''); setMicState('waiting');
+    w.Speech.listen({
+      lang: lang,
+      onState: function (st) { if (valid()) setMicState(st); },
+      onPartial: function (txt) { if (valid()) setLive('„' + txt + '“'); }
+    }, function (r) {
+      listening = false;
+      if (!valid()) return;
+      setMicState('idle');
+      if (!r.ok && (r.error === 'denied' || r.error === 'unavailable')) {
+        micOff = true;
+        w.UI.toast(r.error === 'denied'
+          ? 'Mikrofon nicht erlaubt. In den Android-Einstellungen kannst du es für die App erlauben.'
+          : 'Spracherkennung ist auf diesem Gerät nicht verfügbar.');
+        if (t.kind === 'repeat') return render();         // zurueck zur Selbstkontrolle ("Gesagt")
+        var mb = host.querySelector('#micbox'); if (mb) mb.style.display = 'none';
+        return;
+      }
+      onResult(r);
+    });
+  }
+
+  /* Nachsprechen (Speaking-Lektion): englisch, mit Bewertung. */
+  function speakRepeat(t) {
     if (answered) return;
-    var myIdx = idx;
-    setMic('<button class="btn" type="button" disabled>🎤 Ich höre zu …</button>', 'Sprich jetzt deutlich und nicht zu leise.');
-    w.Speech.listen({ lang: 'en-GB' }, function (r) {
-      if (!cfg || idx !== myIdx || tasks[idx] !== t || answered) return;      // veraltete Antwort
+    runListen('en-GB', function (r) {
       if (!r.ok) {
-        if (r.error === 'denied' || r.error === 'unavailable') {
-          micOff = true;
-          w.UI.toast(r.error === 'denied'
-            ? 'Mikrofon nicht erlaubt. In den Android-Einstellungen kannst du es für die App erlauben.'
-            : 'Spracherkennung ist auf diesem Gerät nicht verfügbar.');
-          return render();                       // zurueck zur Selbstkontrolle ("Gesagt")
-        }
-        return setMic(BTN_AGAIN, 'Ich habe nichts gehört. Versuch es noch einmal, etwas lauter.');
+        fails++;
+        setLive('');
+        setRes('<div class="fb fb--soft pop"><div class="fb__t">🔇 Ich habe nichts gehört</div>' +
+          '<div class="fb__w">Sprich etwas lauter oder halte das Handy näher an den Mund und tippe wieder auf das Mikrofon.</div>' +
+          skipBtn() + '</div>');
+        return;
       }
       var sc = E.speechScore(r.matches, t.say || t.question);
       if (sc.level > 0) {
-        answered = true;
+        answered = true; fails = 0;
         record(true, t);
-        setMic('<button class="btn btn--green" data-act="cont" type="button">Weiter</button>',
-          (sc.level === 2 ? '✅ <b>Perfekt!</b> ' : '✅ <b>Gut!</b> ') +
-          'Ich habe verstanden: „' + esc(sc.heard) + '“');
+        setLive('');
+        setMicState('idle', 'Geschafft!');
+        setRes('<div class="fb fb--ok pop"><div class="fb__t">' + (sc.level === 2 ? '✅ Perfekt!' : '✅ Gut gemacht!') + '</div>' +
+          '<div class="fb__w">Ich habe verstanden:</div><div class="fb__a">„' + esc(sc.heard) + '“</div>' +
+          '<button class="btn btn--green mt" data-act="cont" type="button">Weiter</button></div>');
         var foot = host.querySelector('.play__foot'); if (foot) foot.style.display = 'none';
+        return;
       } else {
-        setMic(BTN_AGAIN, 'Ich habe verstanden: „' + esc(sc.heard) + '“. Hör noch einmal zu (🔊) und versuch es nochmal.');
+        fails++;
+        setLive('');
+        setRes('<div class="fb fb--soft pop"><div class="fb__t">Fast! Das habe ich verstanden:</div>' +
+          '<div class="fb__a">„' + esc(sc.heard) + '“</div>' +
+          '<div class="fb__w">Gesucht war: <b>' + esc(t.say || t.question) + '</b></div>' +
+          (sc.alts.length ? '<div class="tiny mt-s">Auch gehört: ' + sc.alts.map(function (x) { return '„' + esc(x) + '“'; }).join(', ') + '</div>' : '') +
+          '<div class="fb__w mt-s">Hör dir das Wort nochmal an (🔊) und versuche es noch einmal.</div>' +
+          skipBtn() + '</div>');
       }
+      setMicState('idle', 'Tippe auf das Mikrofon für einen neuen Versuch.');
+    });
+  }
+  /* Nach zwei Fehlversuchen soll man nicht festhaengen. */
+  function skipBtn() {
+    return fails >= 2
+      ? '<button class="btn btn--green mt" data-act="said" type="button">Weiter ✓ (das üben wir später)</button>'
+      : '';
+  }
+
+  /* Antwort sprechen statt tippen (Deutsch bei "Uebersetze ins Deutsche", sonst Englisch). */
+  function speakInput(t) {
+    if (answered) return;
+    var inp = $('#ans'); if (!inp) return;
+    var lang = t.de ? 'de-DE' : 'en-GB';
+    runListen(lang, function (r) {
+      if (!r.ok) {
+        setLive('');
+        setMicState('idle', 'Nichts gehört. Tippe auf das Mikrofon und sprich lauter.');
+        return;
+      }
+      var text = null, i, cand;
+      for (i = 0; i < r.matches.length; i++) {            // beste Alternative: die, die zur Loesung passt
+        cand = lang === 'en-GB' ? E.digitsToWords(r.matches[i]) : r.matches[i];
+        if (E.check(cand, t) > 0) { text = cand; break; }
+      }
+      if (text == null) text = lang === 'en-GB' ? E.digitsToWords(r.matches[0]) : r.matches[0];
+      text = text.replace(/[.!?]+$/, '').trim();
+      inp.value = text;
+      setLive('„' + text + '“');
+      setMicState('idle', 'Erkannt. Stimmt das? Dann tippe auf Prüfen, sonst sprich nochmal.');
     });
   }
 
@@ -233,7 +318,8 @@
       if (a === 'speak-ex') return w.Speech.speak(t.ex);
       if (a === 'next') return nextTask(true);
       if (a === 'said') { w.Speech.stopListening(); record(true, t); return nextTask(true); }
-      if (a === 'mic') return listen(t);
+      if (a === 'mic') return speakRepeat(t);
+      if (a === 'vmic') return speakInput(t);
       if (a === 'pick') return pick(+b.getAttribute('data-i'));
       if (a === 'submit') return submit();
       if (a === 'again') return render();

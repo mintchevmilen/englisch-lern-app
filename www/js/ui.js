@@ -482,7 +482,7 @@
         return '<button class="btn btn--sm ' + (Math.abs(s.settings.rate - v) < 0.02 ? '' : 'btn--ghost') + '" data-go="rate:' + v + '" type="button">' + k + '</button>';
       }).join(' ') + '</span></div>' +
       '<div class="tiny mt">Sprachausgabe: ' + (w.Speech.supported() ? (w.Speech.ready() ? 'verfügbar ✓' : 'wird geladen …') : 'auf diesem Gerät nicht verfügbar') + '</div>' +
-      '<div class="tiny">Spracherkennung: ' + (w.Speech.recogSupported() ? 'verfügbar ✓ (beim ersten Mal fragt Android nach der Mikrofon-Erlaubnis)' : 'auf diesem Gerät nicht verfügbar, Nachsprechen läuft als Selbstkontrolle') + '</div>' +
+      '<div class="tiny">Spracherkennung: ' + (w.Speech.recogSupported() ? 'verfügbar ✓ (beim ersten Mal fragt Android nach der Mikrofon-Erlaubnis). Die App stellt die Sprache selbst ein: Englisch beim Nachsprechen, Deutsch bei Übersetzungen ins Deutsche, unabhängig von der Handy-Sprache.' : 'auf diesem Gerät nicht verfügbar, Nachsprechen läuft als Selbstkontrolle') + '</div>' +
       '<div class="tiny">Speicher: ' + (S.storageOk() ? 'localStorage aktiv ✓' : '⚠️ Browser blockiert das Speichern') + '</div>' +
       '</div>';
 

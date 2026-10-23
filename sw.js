@@ -1,7 +1,7 @@
 /* Service Worker – macht die App offline nutzbar.
    Bei Aenderungen die Versionsnummer erhoehen, damit das Handy die
    neue Fassung laedt. */
-var CACHE = 'english-adventure-v3';
+var CACHE = 'english-adventure-v4';
 var FILES = [
   './', './index.html', './manifest.webmanifest',
   './css/style.css',

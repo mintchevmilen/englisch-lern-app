@@ -315,39 +315,88 @@
                '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten', '11': 'eleven',
                '12': 'twelve', '13': 'thirteen', '14': 'fourteen', '15': 'fifteen',
                '16': 'sixteen', '17': 'seventeen', '18': 'eighteen', '19': 'nineteen', '20': 'twenty' };
+
+  /* Gleichklang: Woerter, die der Erkenner nicht unterscheiden kann
+     (bye/buy/by, to/two/too ...). Jede Gruppe zaehlt als dasselbe Wort. */
+  var HOMO = {};
+  [['bye', 'buy', 'by', 'bi', 'bei', 'bay'], ['to', 'too', 'two', 'tu'], ['no', 'know', 'now'],
+   ['hi', 'high', 'hai', 'hey'], ['see', 'sea', 'c'], ['i', 'eye', 'aye', 'ay'], ['are', 'r', 'ah'],
+   ['you', 'u', 'ewe', 'yew'], ['be', 'bee', 'b'], ['one', 'won'], ['four', 'for', 'fore'],
+   ['eight', 'ate'], ['right', 'write', 'rite'], ['hear', 'here'], ['there', 'their', "they're"],
+   ['wear', 'where', 'ware'], ['which', 'witch'], ['new', 'knew', 'gnu'], ['son', 'sun'],
+   ['our', 'hour'], ['meet', 'meat'], ['week', 'weak'], ['wait', 'weight'], ['read', 'red', 'reed'],
+   ['tail', 'tale'], ['whole', 'hole'], ['piece', 'peace'], ['pair', 'pear', 'pare'],
+   ['plain', 'plane'], ['mail', 'male'], ['bear', 'bare'], ['break', 'brake'], ['dear', 'deer'],
+   ['sale', 'sail'], ['wood', 'would'], ['way', 'weigh'], ['or', 'oar', 'ore'], ['night', 'knight'],
+   ['not', 'knot'], ['ok', 'okay'], ['mum', 'mom', 'mam'], ['grey', 'gray'], ['theatre', 'theater'],
+   ['centre', 'center'], ['colour', 'color'], ['favourite', 'favorite'], ['the', 'da', 'de', 'ze'],
+   ['three', 'tree', 'free', 'sree'], ['this', 'dis', 'zis'], ['that', 'dat', 'zat'], ['we', 'vee', 've', 'vi', 'wee'],
+   ['yes', 'yeah', 'yep'], ['thank', 'tank', 'sank'], ['thanks', 'tanks'], ['hello', 'hallo', 'hallow']
+  ].forEach(function (g) { g.forEach(function (x) { HOMO[x] = g[0]; }); });
+
+  /* Grobe Lautschrift: gleicher Klang trotz anderer Schreibweise
+     (und typische Aussprache-Unterschiede deutscher Kinder: th/s, w/v). */
+  function pkey(w) {
+    return w.replace(/ph/g, 'f').replace(/th/g, 't').replace(/ck/g, 'k').replace(/qu/g, 'kv')
+      .replace(/w/g, 'v').replace(/c(?=[eiy])/g, 's').replace(/c/g, 'k').replace(/y/g, 'i')
+      .replace(/ee|ea|ie|ei/g, 'i').replace(/oo|ou/g, 'u').replace(/(.)\1+/g, '$1')
+      .replace(/(.)e$/, '$1');
+  }
+
+  function digitsToWords(s) {
+    return String(s == null ? '' : s).replace(/\b\d{1,2}\b/g, function (d) { return NUMW[d] || d; });
+  }
+  E.digitsToWords = digitsToWords;
+
   function spCanon(s) {
     var t = String(s == null ? '' : s).replace(/[‘’´`]/g, "'").toLowerCase()
       .replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
-    t = t.split(' ').map(function (x) { return NUMW[x] || x; }).join(' ');
+    t = digitsToWords(t);
     return canon(stripTo(t));
   }
+  function homo(w) { return HOMO[w] || w; }
+
+  /* Gleiches Wort (streng): gleich oder Gleichklang-Gruppe. */
+  function sameWord(t, h) { return t === h || homo(t) === homo(h); }
+  /* Gleiches Wort (grosszuegig): zusaetzlich aehnlicher Klang oder 1-2 Buchstaben daneben. */
   function wordMatch(t, h) {
-    if (t === h) return true;
-    if (t.length <= 3 || h.length <= 3) return false;
-    return lev(t, h) <= (t.length > 6 ? 2 : 1);
+    if (sameWord(t, h)) return true;
+    if (t.length < 3 || h.length < 3) return false;
+    if (pkey(t) === pkey(h)) return true;
+    if (t.length < 4 || h.length < 4) return false;          // 3-Buchstaben-Woerter: cat/bat nicht gleichsetzen
+    return lev(t, h) <= (t.length >= 6 ? 2 : 1);
   }
+
+  /* heard: Erkennungs-Ergebnisse (beste zuerst).
+     Rueckgabe: { level: 2 perfekt | 1 gut genug | 0 nicht erkannt, heard, alts } */
   E.speechScore = function (heard, target) {
-    var tg = spCanon(target), best = { level: 0, heard: (heard && heard[0]) || '' };
-    if (!tg) return best;
-    var tw = tg.split(' '), bestScore = -1, i, k, j;
-    for (i = 0; i < (heard || []).length; i++) {
-      var hg = spCanon(heard[i]);
-      if (!hg) continue;
-      if (hg === tg) return { level: 2, heard: heard[i] };
-      var hw = hg.split(' '), used = [], hit = 0;
+    var list = (heard || []).filter(function (x) { return x && String(x).trim(); });
+    var tg = spCanon(target), res = { level: 0, heard: list[0] || '', alts: list.slice(1, 4) };
+    if (!tg || !list.length) return res;
+    var tw = tg.split(' '), i, k, j;
+    var tn = tw.map(homo).join(' ');
+    for (i = 0; i < list.length; i++) {                      // 1) perfekt (auch Gleichklang)
+      var hg = spCanon(list[i]);
+      if (hg === tg || hg.split(' ').map(homo).join(' ') === tn) {
+        return { level: 2, heard: list[i], alts: list.filter(function (x, n) { return n !== i; }).slice(0, 3) };
+      }
+    }
+    var bestScore = 0;
+    for (i = 0; i < list.length; i++) {                      // 2) gut genug
+      var hw = spCanon(list[i]).split(' '), used = [], hit = 0;
       for (k = 0; k < tw.length; k++) {
         for (j = 0; j < hw.length; j++) {
           if (!used[j] && wordMatch(tw[k], hw[j])) { used[j] = 1; hit++; break; }
         }
       }
       var score = hit / tw.length;
-      if (score >= 0.8 && hw.length <= tw.length + 1 && score > bestScore) {
-        bestScore = score; best = { level: 1, heard: heard[i] };
-      } else if (best.level === 0 && bestScore < 0 && i === 0) {
-        best = { level: 0, heard: heard[i] };
+      var need = tw.length === 1 ? 1 : 0.66;
+      if (score >= need && hw.length <= tw.length + 2 && score > bestScore) {
+        bestScore = score;
+        res = { level: 1, heard: list[i], alts: list.filter(function (x, n) { return n !== i; }).slice(0, 3) };
       }
     }
-    return best;
+    return res;
   };
 
   E.listeningTasks = function (items) {
