@@ -500,8 +500,31 @@
       '</div>' +
       '<pre id="diagout" class="tiny" style="white-space:pre-wrap;word-break:break-word;margin:10px 0 0;background:#F1F5F9;border-radius:10px;padding:8px;min-height:38px"></pre></div>';
 
+    var lb = s.lastBackup ? new Date(s.lastBackup).toLocaleDateString('de-DE') : 'noch nie';
+    var snaps = S.snapshots();
+    h += '<div class="card"><b>Backup und Wiederherstellung</b>' +
+      '<div class="muted mt-s">Das Backup enthält den Fortschritt in Englisch und Mathe. Es ist ein Text im JSON-Format. Bewahre ihn an einem sicheren Ort auf (z. B. an dich selbst schicken oder als Datei ablegen).</div>' +
+      '<div class="tiny mt-s">Letztes Backup: ' + esc(lb) + '</div>' +
+      '<button class="btn mt" data-go="bk:copy" type="button">Backup kopieren</button>' +
+      '<button class="btn btn--ghost mt" data-go="bk:file" type="button">Backup als Datei speichern</button>' +
+      '<button class="btn btn--ghost mt" data-go="bk:open" type="button">Backup einfügen oder Datei laden</button>' +
+      '<div id="bkbox" hidden>' +
+        '<textarea id="bktext" class="mt" rows="5" style="width:100%;box-sizing:border-box;border-radius:10px;border:1px solid #CBD5E1;padding:8px;font-size:13px" placeholder="Backup-Text hier einfügen"></textarea>' +
+        '<div class="row mt" style="flex-wrap:wrap">' +
+          '<button class="btn btn--sm" data-go="bk:import" type="button">Einlesen</button>' +
+          '<label class="btn btn--ghost btn--sm" style="cursor:pointer">Datei wählen<input type="file" id="bkfile" accept=".json,application/json,text/plain" hidden></label>' +
+        '</div>' +
+      '</div>' +
+      (snaps.length
+        ? '<div class="tiny mt">Automatische Sicherungen auf diesem Gerät (gehen bei Deinstallation verloren):</div>' +
+          snaps.map(function (sn, i) {
+            return '<div class="row row--between mt-s"><span class="tiny">' + esc(new Date(sn.ts).toLocaleString('de-DE')) + (sn.label ? ' · ' + esc(sn.label) : '') + '</span>' +
+              '<button class="btn btn--ghost btn--sm" data-go="bk:snap:' + i + '" type="button">Zurückholen</button></div>';
+          }).join('')
+        : '') +
+      '</div>';
+
     h += '<div class="card"><b>Daten</b>' +
-      '<button class="btn btn--ghost mt" data-go="export" type="button">Fortschritt anzeigen (Backup)</button>' +
       '<button class="btn btn--ghost mt" data-go="reset" type="button" style="color:#DC2626;border-color:#FECACA">Allen Fortschritt löschen</button></div>';
 
     var unconfirmed = D.units.filter(function (u) { return !u.titleConfirmed; });
@@ -655,12 +678,81 @@
       }
       return;
     }
-    if (a === 'export') {
-      var d = S.data();
-      w.prompt('Backup-Text (kopieren und sicher aufbewahren):', JSON.stringify({ xp: d.xp, streak: d.streak, words: Object.keys(d.words).length, lessons: Object.keys(d.lessons).length, time: d.timeSec }));
+    if (a === 'export') { return UI.action('bk:copy'); }
+    if (a === 'bk') return UI.backup(p[1], p[2]);
+  };
+
+  /* ---------------- Backup (Eltern) ---------------- */
+  function bkShow(text) {
+    var box = document.getElementById('bkbox'), ta = document.getElementById('bktext');
+    if (box) box.hidden = false;
+    if (ta) { ta.value = text; ta.focus(); ta.select(); }
+  }
+  function bkName() { return 'lern-app-backup-' + S.today() + '.json'; }
+
+  function bkImportText(text) {
+    var b = S.parseBackup(text);
+    if (!b) return UI.toast('Das sieht nicht nach einem Backup dieser App aus.');
+    if (!w.confirm(S.describeBackup(b) + '\n\nJetzt einlesen?')) return;
+    S.applyBackup(b);
+    UI.toast('Backup eingelesen.');
+    UI.go('home'); w.setTimeout(function () { w.location.reload(); }, 150);
+  }
+
+  UI.backup = function (what, arg) {
+    if (what === 'copy') {
+      var text = S.backupText();
+      S.markBackup();
+      var done = function () { UI.toast('Backup kopiert. Jetzt irgendwo einfügen und speichern.'); };
+      var fallback = function () { bkShow(text); UI.toast('Text markiert. Bitte lange drücken und „Kopieren“ wählen.'); };
+      try {
+        if (w.navigator.clipboard && w.navigator.clipboard.writeText) w.navigator.clipboard.writeText(text).then(done, fallback);
+        else fallback();
+      } catch (e) { fallback(); }
       return;
     }
+    if (what === 'file') {
+      var txt = S.backupText();
+      S.markBackup();
+      try {
+        var file = new w.File([txt], bkName(), { type: 'application/json' });
+        if (w.navigator.canShare && w.navigator.canShare({ files: [file] }) && w.navigator.share) {
+          return w.navigator.share({ files: [file], title: 'Lern-App Backup' }).catch(function () { /* abgebrochen */ });
+        }
+        var url = w.URL.createObjectURL(new w.Blob([txt], { type: 'application/json' }));
+        var an = document.createElement('a'); an.href = url; an.download = bkName();
+        document.body.appendChild(an); an.click(); document.body.removeChild(an);
+        w.setTimeout(function () { w.URL.revokeObjectURL(url); }, 4000);
+        UI.toast('Datei wird gespeichert (Ordner „Downloads“). Falls nichts passiert: „Backup kopieren“ nutzen.');
+      } catch (e) {
+        bkShow(txt); UI.toast('Speichern als Datei klappt hier nicht. Text markiert, bitte kopieren.');
+      }
+      return;
+    }
+    if (what === 'open') { var bx = document.getElementById('bkbox'); if (bx) bx.hidden = !bx.hidden; return; }
+    if (what === 'import') {
+      var ta = document.getElementById('bktext');
+      if (!ta || !ta.value.trim()) return UI.toast('Bitte zuerst den Backup-Text einfügen.');
+      return bkImportText(ta.value);
+    }
+    if (what === 'snap') {
+      var sn = S.snapshots()[+arg];
+      if (!sn) return;
+      if (!w.confirm('Sicherung vom ' + new Date(sn.ts).toLocaleString('de-DE') + ' zurückholen? Der jetzige Stand wird vorher gesichert.')) return;
+      if (S.restoreSnapshot(+arg)) { UI.toast('Sicherung zurückgeholt.'); UI.go('home'); w.setTimeout(function () { w.location.reload(); }, 150); }
+      else UI.toast('Diese Sicherung ist nicht lesbar.');
+    }
   };
+
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || t.id !== 'bkfile' || !t.files || !t.files[0]) return;
+    var fr = new w.FileReader();
+    fr.onload = function () { bkImportText(String(fr.result || '')); };
+    fr.onerror = function () { UI.toast('Die Datei konnte nicht gelesen werden.'); };
+    fr.readAsText(t.files[0]);
+    t.value = '';
+  });
 
   /* ---------------- Panik-Modus: Kette aus Etappen ---------------- */
   UI.panic = function (uid) {

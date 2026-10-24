@@ -1,5 +1,11 @@
 # Changelog – English Adventure
 
+## 2.5.0 – 2026-10-24
+- Neu: Backup und Wiederherstellung im Elternbereich. „Backup kopieren“ legt den gesamten Fortschritt (Englisch und Mathe) als JSON-Text in die Zwischenablage, „Backup als Datei speichern“ speichert ihn als Datei (oder öffnet das Teilen-Menü). „Backup einfügen oder Datei laden“ liest einen Text oder eine Datei wieder ein, nach Rückfrage und mit vorheriger Sicherung des jetzigen Stands.
+- Altes Kurz-Backup (Text mit xp, streak, words, lessons, time aus den Vorversionen) lässt sich einfügen. Es enthielt nur Zahlen: übernommen werden XP, Serie und Lernzeit, aber keine einzelnen Wörter oder Lektionen. Höhere aktuelle Werte werden nie überschrieben.
+- Neu: automatische Sicherung auf dem Gerät, höchstens eine pro Tag, die letzten 5 bleiben. Zurückholen im Elternbereich. Schützt vor Fehlern, nicht vor Deinstallation der App. Dafür gibt es das Backup per Text oder Datei.
+- Anzeige „Letztes Backup“ im Elternbereich. 5 neue Tests (73 insgesamt).
+
 ## 2.4.0 – 2026-10-23
 - Neu: Kursleiste ganz oben (wie bei Duolingo). Tippen auf den Kursnamen öffnet die Auswahl: „Englisch 5. Klasse“ und „Mathe 5. Klasse“. Die App merkt sich den zuletzt genutzten Kurs.
 - Mathe 5. Klasse (Mathe Mission 5, Hessen G9) ist jetzt als zweiter Kurs eingebaut. Lernpfad, Klassenarbeits-Modus, Spiele und Elternbereich funktionieren wie in der eigenen Mathe-App. Fortschritt wird getrennt gespeichert, Englisch bleibt unverändert.

@@ -3,7 +3,7 @@
    ============================================================= */
 (function (w) {
   var UI = w.UI;
-  w.APP_VERSION = '2.4.0';
+  w.APP_VERSION = '2.5.0';
 
   function route() {
     return (w.location.hash || '#/home').replace(/^#\/?/, '') || 'home';
@@ -91,6 +91,8 @@
   var saved = 'englisch';
   try { saved = w.localStorage.getItem('ea-course') || 'englisch'; } catch (e) { /* egal */ }
   setCourse(saved, false);
+
+  try { w.Store.autoSnapshot(); } catch (e) { /* nicht kritisch */ }
 
   /* Erststart */
   if (!w.location.hash) w.location.hash = '#/home';
