@@ -2,7 +2,7 @@ name: Android-APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [apk]
   workflow_dispatch:
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
         id: apk
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          NAME="english-adventure-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
+          NAME="lern-abenteuer-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
           cp android/app/build/outputs/apk/debug/app-debug.apk "$NAME"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -52,6 +52,6 @@ jobs:
           MSG=$(git log -1 --pretty=%s)
           gh release create "v${{ steps.apk.outputs.version }}-build${GITHUB_RUN_NUMBER}" \
             "${{ steps.apk.outputs.name }}" \
-            --title "English Adventure ${{ steps.apk.outputs.version }} (Build ${GITHUB_RUN_NUMBER})" \
+            --title "Lern Abenteuer ${{ steps.apk.outputs.version }} (Build ${GITHUB_RUN_NUMBER})" \
             --notes "Commit: ${MSG}" \
             --prerelease

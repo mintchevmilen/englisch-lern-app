@@ -1,6 +1,6 @@
 {
   "appId": "de.mintchev.englishadventure",
-  "appName": "English Adventure",
+  "appName": "Lern Abenteuer",
   "webDir": "www",
   "android": {
     "useLegacyBridge": true,

@@ -1,5 +1,11 @@
 # Changelog – English Adventure
 
+## 3.0.0 – 2026-10-28 (Branch apk, nur für die Android-App)
+- Neu: Kurs Bulgarisch (Alphabet, Wörter, Sätze, Nachsprechen mit Spracherkennung) in der Kursleiste.
+- Neu: Kurs Python programmieren. Echtes Python (Pyodide, läuft offline auf dem Handy), freier Code Editor mit Tastenleiste, 10 Lektionen, 29 Aufgaben mit automatischer Prüfung, Werkstatt für eigene Programme, Wörterbuch, Sicherung.
+- Die App heißt jetzt Lern Abenteuer. Die App Kennung bleibt gleich, die neue APK ersetzt die alte und behält den Lernstand.
+- Die Web Version auf dem Branch master ist unverändert (nur Englisch und Mathe).
+
 ## 2.5.0 – 2026-10-24
 - Neu: Backup und Wiederherstellung im Elternbereich. „Backup kopieren“ legt den gesamten Fortschritt (Englisch und Mathe) als JSON-Text in die Zwischenablage, „Backup als Datei speichern“ speichert ihn als Datei (oder öffnet das Teilen-Menü). „Backup einfügen oder Datei laden“ liest einen Text oder eine Datei wieder ein, nach Rückfrage und mit vorheriger Sicherung des jetzigen Stands.
 - Altes Kurz-Backup (Text mit xp, streak, words, lessons, time aus den Vorversionen) lässt sich einfügen. Es enthielt nur Zahlen: übernommen werden XP, Serie und Lernzeit, aber keine einzelnen Wörter oder Lektionen. Höhere aktuelle Werte werden nie überschrieben.

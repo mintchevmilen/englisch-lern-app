@@ -25,7 +25,10 @@ const REQUIRED_FILES = [
   'js/storage.js', 'js/srs.js', 'js/audio.js', 'js/engine.js',
   'js/player.js', 'js/games.js', 'js/ui.js', 'js/app.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon.svg',
-  'mathe/index.html', 'mathe/css/app.css', 'mathe/js/data.js', 'mathe/js/gen.js', 'mathe/js/state.js', 'mathe/js/ui.js', 'mathe/js/exam.js', 'mathe/js/games.js', 'mathe/js/app.js'
+  'mathe/index.html', 'mathe/css/app.css', 'mathe/js/data.js', 'mathe/js/gen.js', 'mathe/js/state.js', 'mathe/js/ui.js', 'mathe/js/exam.js', 'mathe/js/games.js', 'mathe/js/app.js',
+  'bulgarisch/index.html', 'bulgarisch/css/style.css', 'bulgarisch/js/app.js', 'bulgarisch/js/audio.js', 'bulgarisch/js/screens.js', 'bulgarisch/data/lessons.js', 'bulgarisch/data/words.js', 'bulgarisch/data/alphabet.js',
+  'python/index.html', 'python/css/py.css', 'python/js/ui.js', 'python/js/lessons.js', 'python/js/runner.js', 'python/js/worker.mjs', 'python/js/check.js', 'python/js/store.js',
+  'python/pyodide/pyodide.mjs', 'python/pyodide/pyodide.asm.mjs', 'python/pyodide/pyodide.asm.wasm', 'python/pyodide/python_stdlib.zip', 'python/pyodide/pyodide-lock.json'
 ];
 
 let failed = false;

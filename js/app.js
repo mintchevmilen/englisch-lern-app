@@ -3,7 +3,7 @@
    ============================================================= */
 (function (w) {
   var UI = w.UI;
-  w.APP_VERSION = '2.5.0';
+  w.APP_VERSION = '3.0.0';
 
   function route() {
     return (w.location.hash || '#/home').replace(/^#\/?/, '') || 'home';
@@ -43,34 +43,42 @@
     if (history.length > 1) history.back(); else UI.go('home');
   });
 
-  /* ---------- Kurse (Englisch / Mathe), Kursleiste oben ---------- */
+  /* ---------- Kurse (Englisch, Mathe, Bulgarisch, Python), Kursleiste oben ---------- */
   var COURSES = {
     englisch: { name: 'Englisch 5. Klasse', ico: '\uD83C\uDDEC\uD83C\uDDE7' },
-    mathe:    { name: 'Mathe 5. Klasse',    ico: '\u2795' }
+    mathe:    { name: 'Mathe 5. Klasse',    ico: '\u2795', src: 'mathe/index.html', frame: 'mathFrame' },
+    bulgarisch: { name: 'Bulgarisch',       ico: '\uD83C\uDDE7\uD83C\uDDEC', src: 'bulgarisch/index.html', frame: 'bulgarischFrame' },
+    python:   { name: 'Python programmieren', ico: '\uD83D\uDC0D', src: 'python/index.html', frame: 'pythonFrame' }
   };
   var course = 'englisch';
   var courseMenu = document.getElementById('coursemenu');
   var courseBtn = document.getElementById('courseBtn');
-  var mathFrame = document.getElementById('mathFrame');
 
   function closeCourseMenu() { courseMenu.hidden = true; courseBtn.setAttribute('aria-expanded', 'false'); }
 
   function setCourse(id, remember) {
     if (!COURSES[id]) id = 'englisch';
     course = id;
-    document.body.classList.toggle('course-mathe', id === 'mathe');
+    document.body.classList.toggle('course-mathe', id !== 'englisch');
     document.getElementById('courseName').textContent = COURSES[id].name;
     document.getElementById('courseIco').textContent = COURSES[id].ico;
     Array.prototype.forEach.call(courseMenu.querySelectorAll('[data-course]'), function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-course') === id);
     });
-    if (id === 'mathe') {
-      if (!mathFrame.getAttribute('src')) mathFrame.setAttribute('src', 'mathe/index.html');
-      mathFrame.hidden = false;
-      if (w.Speech && w.Speech.stop) { try { w.Speech.stop(); } catch (e) { /* egal */ } }
-    } else {
-      mathFrame.hidden = true;
-    }
+    Object.keys(COURSES).forEach(function (k) {
+      var c = COURSES[k];
+      if (!c.frame) return;
+      var fr = document.getElementById(c.frame);
+      if (k === id) {
+        if (!fr.getAttribute('src')) fr.setAttribute('src', c.src);
+        fr.hidden = false;
+      } else {
+        fr.hidden = true;
+        /* Ton und Mikrofon des verlassenen Kurses beenden */
+        try { if (fr.contentWindow && fr.contentWindow.Speaker) { fr.contentWindow.Speaker.stop(); fr.contentWindow.Speaker.stopListening && fr.contentWindow.Speaker.stopListening(); } } catch (e) { /* egal */ }
+      }
+    });
+    if (id !== 'englisch' && w.Speech && w.Speech.stop) { try { w.Speech.stop(); } catch (e) { /* egal */ } }
     if (remember) { try { w.localStorage.setItem('ea-course', id); } catch (e) { /* egal */ } }
     closeCourseMenu();
   }

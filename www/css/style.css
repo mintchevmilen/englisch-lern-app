@@ -281,5 +281,5 @@ ul,ol{padding:0;list-style:none}
 .coursemenu__more{padding:8px 10px 6px;font-size:12.5px;opacity:.6}
 .mathframe{position:fixed;left:0;right:0;top:var(--course);bottom:0;width:100%;height:calc(100% - var(--course));border:0;z-index:10;background:#eef1f8}
 body.course-mathe #topbar,body.course-mathe #screen,body.course-mathe #tabbar{display:none !important}
-body.course-mathe .mathframe{display:block}
+body.course-mathe .mathframe:not([hidden]){display:block}
 .mathframe[hidden]{display:none}
