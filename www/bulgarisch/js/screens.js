@@ -668,6 +668,13 @@
       });
       diagRow.appendChild(b);
     });
+    if (sp.recogSupported()) {
+      var stratBtn = U.el("button", { class: "btn outline", style: "padding:8px 12px;font-size:14px" });
+      var showStrat = function () { stratBtn.textContent = "Erkennungs-Modus: " + sp.STRATEGIES[sp.getStrategy()].name; };
+      showStrat();
+      stratBtn.addEventListener("click", function () { sp.nextStrategy(); showStrat(); });
+      diagRow.appendChild(stratBtn);
+    }
     sc.appendChild(diagRow); sc.appendChild(out);
     wrap.appendChild(sc);
 

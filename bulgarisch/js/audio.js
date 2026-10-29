@@ -35,6 +35,25 @@
   function webSR() { return w.SpeechRecognition || w.webkitSpeechRecognition || null; }
   function msgOf(e) { return String((e && (e.message || e.errorMessage || e.code)) || e || ""); }
 
+  /* Erkennungs-Modi. Manche Geraete verstehen "bg-BG" nicht, aber "bg", oder
+     brauchen das Google-Sprachfenster. Der aktive Modus wird gespeichert. */
+  var STRATS = [
+    { name: "Standard (bg-BG)", lang: "bg-BG", popup: false },
+    { name: "Kurzer Code (bg)", lang: "bg", popup: false },
+    { name: "Google-Sprachfenster (bg-BG)", lang: "bg-BG", popup: true },
+    { name: "Google-Sprachfenster (bg)", lang: "bg", popup: true }
+  ];
+  Speaker.STRATEGIES = STRATS;
+  Speaker.getStrategy = function () {
+    var i = 0;
+    try { i = parseInt(settings().micStrategy, 10) || 0; } catch (e) {}
+    return i >= 0 && i < STRATS.length ? i : 0;
+  };
+  Speaker.setStrategy = function (i) {
+    try { w.Storage.updateSettings(function (c) { c.micStrategy = ((i % STRATS.length) + STRATS.length) % STRATS.length; }); } catch (e) {}
+  };
+  Speaker.nextStrategy = function () { var n = (Speaker.getStrategy() + 1) % STRATS.length; Speaker.setStrategy(n); return n; };
+
   function settings() {
     try { return w.Storage.getSettings(); } catch (e) { return { sound: true, mic: true, rate: 0.85 }; }
   }
@@ -147,9 +166,10 @@
       return "none";
     }
 
+    var strat = STRATS[opts.strategy !== undefined ? opts.strategy : Speaker.getStrategy()];
     var sr = nativeSR();
     if (sr) {
-      dbg("natives Plugin, Sprache " + LANG);
+      dbg("natives Plugin, Modus: " + strat.name);
       try {
         sr.available().then(function (r) {
           dbg("available: " + JSON.stringify(r));
@@ -161,13 +181,13 @@
             if (s.done) return;
             if (!granted) { finish({ ok: false, error: "denied" }); return; }
             state("waiting");
-            return sr.start({ language: LANG, maxResults: 5, prompt: "", partialResults: false, popup: false }).then(function (res) {
+            return sr.start({ language: strat.lang, maxResults: 5, prompt: strat.popup ? "Sprich auf Bulgarisch" : "", partialResults: false, popup: strat.popup }).then(function (res) {
               dbg("start() fertig: " + JSON.stringify(res));
               var m = (res && res.matches) || [];
-              finish(m.length ? { ok: true, matches: m } : { ok: false, error: "none" });
+              finish(m.length ? { ok: true, matches: m } : { ok: false, error: "none", detail: "keine Treffer" });
             });
           });
-        })["catch"](function (e) { dbg("Fehler: " + msgOf(e)); finish({ ok: false, error: errKind(e) }); });
+        })["catch"](function (e) { dbg("Fehler: " + msgOf(e)); finish({ ok: false, error: errKind(e), detail: msgOf(e) }); });
       } catch (e) { dbg("Ausnahme: " + msgOf(e)); finish({ ok: false, error: "unavailable" }); }
       return;
     }
@@ -214,6 +234,7 @@
       L("Browser-Sprachausgabe: " + (synth ? "ja" : "nein") + " | Browser-Erkennung: " + (webSR() ? "ja" : "nein"));
       L("Bulgarische Stimme: " + (Speaker.hasBulgarianVoice ? "ja oder noch unbekannt" : "nein"));
       L("Einstellungen: " + JSON.stringify(settings()));
+      L("Erkennungs-Modus: " + STRATS[Speaker.getStrategy()].name);
       L("Letzter Fehler beim Vorlesen: " + (Speaker.lastError || "keiner"));
       return;
     }
@@ -232,9 +253,18 @@
     }
     if (kind === "mic") {
       if (!Speaker.recogSupported()) { L("Keine Spracherkennung verfügbar."); return; }
+      var sr0 = nativeSR();
+      L("Aktueller Modus: " + STRATS[Speaker.getStrategy()].name);
+      if (sr0 && sr0.getSupportedLanguages) {
+        sr0.getSupportedLanguages().then(function (r) {
+          var l = (r && r.languages) || [];
+          var bg = l.filter(function (x) { return /^bg/i.test(x); });
+          L("Sprachen vom Gerät: " + l.length + ", bulgarisch darunter: " + (bg.length ? bg.join(", ") : "keine"));
+        }, function (e) { L("Sprachliste nicht lesbar: " + msgOf(e)); });
+      }
       L("Sprich jetzt „мама“ ...");
       Speaker.listen({ log: L, onState: function (st) { L("Status: " + st); } }, function (r) {
-        L(r.ok ? "Verstanden: " + r.matches.join(" | ") : "Nichts erkannt (" + r.error + ")");
+        L(r.ok ? "Verstanden: " + r.matches.join(" | ") : "Nichts erkannt (" + r.error + (r.detail ? ": " + r.detail : "") + ")");
       });
     }
   };

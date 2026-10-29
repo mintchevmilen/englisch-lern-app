@@ -11,7 +11,7 @@
   function create(opts) {
     var U = w.Utils;
     var maxTries = opts.maxTries || 2;
-    var tries = 0, busy = false, dead = false;
+    var tries = 0, busy = false, dead = false, quiet = 0;
 
     var btn = U.el("button", { class: "mic-btn is-idle", type: "button", "aria-label": "Nachsprechen" }, [
       U.el("span", { class: "mic-ico", text: "🎤" })
@@ -52,13 +52,22 @@
             return;
           }
           tries++;
+          quiet++;
+          var tech = res.detail ? " <span class=\"mic-alt\">(" + esc(res.detail) + ")</span>" : "";
+          var extra = "";
+          /* Zwei Fehlschläge in Folge: anderen Erkennungs-Modus probieren */
+          if (quiet >= 2 && w.Speaker.nextStrategy) {
+            var ni = w.Speaker.nextStrategy();
+            quiet = 0;
+            extra = "<br><small>Ich probiere beim nächsten Mal eine andere Einstellung: " + esc(w.Speaker.STRATEGIES[ni].name) + ".</small>";
+          }
           setState("idle", "Nochmal versuchen");
-          say("soft", "Ich habe nichts gehört. Tippe auf das Mikrofon und sprich laut und deutlich.");
+          say("soft", "Ich habe nichts gehört. Tippe auf das Mikrofon und sprich laut und deutlich." + tech + extra);
           report({ level: 0, heard: "", tries: tries, success: false, final: tries >= maxTries });
           return;
         }
         var sc = w.BgScore.score(res.matches, opts.target);
-        tries++;
+        tries++; quiet = 0;
         if (sc.level === 2) {
           setState("done", "Super!");
           say("ok", "🎉 Genau richtig! Ich habe <b>" + esc(sc.heard) + "</b> verstanden.");

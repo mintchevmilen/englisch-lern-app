@@ -1,5 +1,9 @@
 # Changelog – English Adventure
 
+## 3.1.0 – 2026-10-29 (Branch apk)
+- Mathe: Geometrie Zeichnungen sind jetzt maßstabsgetreu (Quadrat wird als Quadrat gezeichnet). Maßangaben werden nicht mehr links oder rechts abgeschnitten.
+- Bulgarisch: Spracherkennung mit mehreren Erkennungs-Modi (bg-BG, bg, Google Sprachfenster). Nach zwei Fehlversuchen wechselt die App selbst den Modus. Der echte Fehlertext wird angezeigt, statt immer nur "nichts gehört". Modus wählbar im Elternbereich, Mikrofon Test zeigt mehr Details.
+
 ## 3.0.0 – 2026-10-28 (Branch apk, nur für die Android-App)
 - Neu: Kurs Bulgarisch (Alphabet, Wörter, Sätze, Nachsprechen mit Spracherkennung) in der Kursleiste.
 - Neu: Kurs Python programmieren. Echtes Python (Pyodide, läuft offline auf dem Handy), freier Code Editor mit Tastenleiste, 10 Lektionen, 29 Aufgaben mit automatischer Prüfung, Werkstatt für eigene Programme, Wörterbuch, Sicherung.
