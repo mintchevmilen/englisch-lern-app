@@ -3,7 +3,7 @@
    ============================================================= */
 (function (w) {
   var UI = w.UI;
-  w.APP_VERSION = '2.5.0';
+  w.APP_VERSION = '2.5.1';
 
   function route() {
     return (w.location.hash || '#/home').replace(/^#\/?/, '') || 'home';

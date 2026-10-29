@@ -1,5 +1,8 @@
 # Changelog – English Adventure
 
+## 2.5.1 – 2026-10-29
+- Mathe: Geometrie Zeichnungen sind jetzt maßstabsgetreu (ein Quadrat wird als Quadrat gezeichnet). Maßangaben werden nicht mehr links oder rechts abgeschnitten, die fehlende Ecke der L Figur ist gestrichelt eingezeichnet.
+
 ## 2.5.0 – 2026-10-24
 - Neu: Backup und Wiederherstellung im Elternbereich. „Backup kopieren“ legt den gesamten Fortschritt (Englisch und Mathe) als JSON-Text in die Zwischenablage, „Backup als Datei speichern“ speichert ihn als Datei (oder öffnet das Teilen-Menü). „Backup einfügen oder Datei laden“ liest einen Text oder eine Datei wieder ein, nach Rückfrage und mit vorheriger Sicherung des jetzigen Stands.
 - Altes Kurz-Backup (Text mit xp, streak, words, lessons, time aus den Vorversionen) lässt sich einfügen. Es enthielt nur Zahlen: übernommen werden XP, Serie und Lernzeit, aber keine einzelnen Wörter oder Lektionen. Höhere aktuelle Werte werden nie überschrieben.

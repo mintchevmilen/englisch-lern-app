@@ -62,7 +62,7 @@ function fehler(frage, zeilen, falscheZeile, erkl){
 
 /* ---------- kleine SVG-Grafiken (leichtgewichtig, ohne Bibliothek) ---------- */
 function svgZahlenstrahl(von, bis, teile, markIdx){
-  var w=300,h=64,pad=18, x0=pad, x1=w-pad, s='';
+  var w=300,h=64,pad=30, x0=pad, x1=w-pad, s='';
   s+='<svg viewBox="0 0 '+w+' '+h+'" class="gsvg" role="img">';
   s+='<line x1="'+x0+'" y1="34" x2="'+x1+'" y2="34" stroke="currentColor" stroke-width="2"/>';
   s+='<polygon points="'+x1+',34 '+(x1-8)+',30 '+(x1-8)+',38" fill="currentColor"/>';
@@ -100,27 +100,35 @@ function svgKoord(punkte, max, frageIdx){
   return s;
 }
 function svgRechteck(a,b,ea,eb,label){
-  var w=280,h=170,pad=32;
-  var bw=w-2*pad, bh=Math.max(52, Math.min(h-2*pad, bw*b/a));
+  /* Maßstabsgetreu: Ein Quadrat wird als Quadrat gezeichnet, ein Rechteck im richtigen Seitenverhältnis.
+     Links und unten bleibt Platz für die Maßangaben, damit nichts abgeschnitten wird. */
+  var w=300,h=190,padL=58,padR=20,padT=18,padB=36;
+  var aw=w-padL-padR, ah=h-padT-padB, sc=Math.min(aw/a, ah/b);
+  var bw=a*sc, bh=b*sc, x0=padL+(aw-bw)/2, y0=padT+(ah-bh)/2;
+  var sq=Math.min(10,bw/3,bh/3);
   var s='<svg viewBox="0 0 '+w+' '+h+'" class="gsvg" role="img">';
-  s+='<rect x="'+pad+'" y="'+pad+'" width="'+bw+'" height="'+bh+'" fill="rgba(79,124,255,.14)" stroke="currentColor" stroke-width="2"/>';
-  s+='<text x="'+(pad+bw/2)+'" y="'+(pad+bh+20)+'" text-anchor="middle" font-size="13" fill="currentColor">'+a+' '+ea+'</text>';
-  s+='<text x="'+(pad-8)+'" y="'+(pad+bh/2+4)+'" text-anchor="end" font-size="13" fill="currentColor">'+b+' '+eb+'</text>';
-  if(label) s+='<text x="'+(pad+bw/2)+'" y="'+(pad+bh/2+5)+'" text-anchor="middle" font-size="13" fill="currentColor" opacity=".75">'+label+'</text>';
+  s+='<rect x="'+x0+'" y="'+y0+'" width="'+bw+'" height="'+bh+'" fill="rgba(79,124,255,.14)" stroke="currentColor" stroke-width="2"/>';
+  s+='<polyline points="'+x0+','+(y0+bh-sq)+' '+(x0+sq)+','+(y0+bh-sq)+' '+(x0+sq)+','+(y0+bh)+'" fill="none" stroke="currentColor" stroke-width="1"/>';
+  s+='<text x="'+(x0+bw/2)+'" y="'+(y0+bh+20)+'" text-anchor="middle" font-size="13" fill="currentColor">'+a+' '+ea+'</text>';
+  s+='<text x="'+(x0-8)+'" y="'+(y0+bh/2+4)+'" text-anchor="end" font-size="13" fill="currentColor">'+b+' '+eb+'</text>';
+  if(label && bw>=60 && bh>=22) s+='<text x="'+(x0+bw/2)+'" y="'+(y0+bh/2+5)+'" text-anchor="middle" font-size="13" fill="currentColor" opacity=".75">'+label+'</text>';
   s+='</svg>';
   return s;
 }
 function svgLFigur(A,B,c,d){
-  var w=280,h=190,pad=26,sc=Math.min((w-2*pad)/A,(h-2*pad)/B);
+  var w=300,h=200,padL=52,padR=50,padT=26,padB=34;
+  var sc=Math.min((w-padL-padR)/A,(h-padT-padB)/B);
   var W=A*sc,H=B*sc,cw=c*sc,ch=d*sc;
-  var pts=[[pad,pad+H],[pad,pad],[pad+W-cw,pad],[pad+W-cw,pad+ch],[pad+W,pad+ch],[pad+W,pad+H]];
+  var x0=padL+((w-padL-padR)-W)/2, y0=padT+((h-padT-padB)-H)/2;
+  var pts=[[x0,y0+H],[x0,y0],[x0+W-cw,y0],[x0+W-cw,y0+ch],[x0+W,y0+ch],[x0+W,y0+H]];
   var p=pts.map(function(q){return q[0]+','+q[1];}).join(' ');
   var s='<svg viewBox="0 0 '+w+' '+h+'" class="gsvg" role="img">';
+  s+='<rect x="'+(x0+W-cw)+'" y="'+y0+'" width="'+cw+'" height="'+ch+'" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" opacity=".45"/>';
   s+='<polygon points="'+p+'" fill="rgba(224,86,122,.15)" stroke="currentColor" stroke-width="2"/>';
-  s+='<text x="'+(pad+W/2)+'" y="'+(pad+H+18)+'" text-anchor="middle" font-size="12" fill="currentColor">'+A+' cm</text>';
-  s+='<text x="'+(pad-6)+'" y="'+(pad+H/2)+'" text-anchor="end" font-size="12" fill="currentColor">'+B+' cm</text>';
-  s+='<text x="'+(pad+W-cw/2)+'" y="'+(pad-8)+'" text-anchor="middle" font-size="11" fill="currentColor" opacity=".8">'+c+' cm</text>';
-  s+='<text x="'+(pad+W+4)+'" y="'+(pad+ch/2+4)+'" font-size="11" fill="currentColor" opacity=".8">'+d+' cm</text>';
+  s+='<text x="'+(x0+W/2)+'" y="'+(y0+H+20)+'" text-anchor="middle" font-size="12" fill="currentColor">'+A+' cm</text>';
+  s+='<text x="'+(x0-6)+'" y="'+(y0+H/2+4)+'" text-anchor="end" font-size="12" fill="currentColor">'+B+' cm</text>';
+  s+='<text x="'+(x0+W-cw/2)+'" y="'+(y0-8)+'" text-anchor="middle" font-size="11" fill="currentColor" opacity=".85">'+c+' cm</text>';
+  s+='<text x="'+(x0+W+6)+'" y="'+(y0+ch/2+4)+'" font-size="11" fill="currentColor" opacity=".85">'+d+' cm</text>';
   s+='</svg>';
   return s;
 }
