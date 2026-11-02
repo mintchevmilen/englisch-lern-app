@@ -687,6 +687,7 @@ GEN.t404 = function(l){
     ['Rechteck','4 rechte Winkel, gegenüberliegende Seiten gleich lang'],
     ['Raute','4 gleich lange Seiten, aber nicht unbedingt rechte Winkel'],
     ['Parallelogramm','gegenüberliegende Seiten parallel und gleich lang'],
+    ['Drachenviereck','zwei Paar gleich lange Seiten, die nebeneinander liegen'],
     ['Trapez','mindestens ein Paar paralleler Seiten']
   ];
   if(l===1){
@@ -903,6 +904,164 @@ GEN.t605 = function(l){
     [{frage:'Volumen? (in cm^{3})', loesung:String(a4*b4*c4), tipp:'V = a · b · c'},
      {frage:'Oberfläche? (in cm^{2})', loesung:String(2*(a4*b4+a4*c4+b4*c4)), tipp:'O = 2 · (a·b + a·c + b·c)'}],
     'V = '+(a4*b4*c4)+' cm^{3},  O = '+(2*(a4*b4+a4*c4+b4*c4))+' cm^{2}.');
+};
+
+
+/* =================== Ergaenzungen passend zum Schulbuch =================== */
+function roemisch(n){
+  var m=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']], r='';
+  for(var i=0;i<m.length;i++){ while(n>=m[i][0]){ r+=m[i][1]; n-=m[i][0]; } }
+  return r;
+}
+function ggT(a,b){ while(b){ var t=a%b; a=b; b=t; } return a; }
+
+GEN.t107 = function(l){
+  if(l===1){
+    var n=R(6,39);
+    if(R(0,1)) return num('Welche Zahl ist '+roemisch(n)+'?', n, roemisch(n)+' = '+n+'.');
+    return mc('Schreibe '+n+' als römische Zahl.', roemisch(n),
+      [roemisch(n+1),roemisch(n-1),roemisch(n+10),roemisch(n+5),roemisch(n-5)].filter(function(x){return x!==roemisch(n);}).slice(0,4),
+      n+' = '+roemisch(n)+'. X = 10, V = 5, I = 1; kleiner vor größer wird abgezogen.');
+  }
+  if(l===2){
+    var m=R(40,399);
+    if(R(0,1)) return num('Welche Zahl ist '+roemisch(m)+'?', m, roemisch(m)+' = '+m+'.');
+    return mc('Schreibe '+m+' als römische Zahl.', roemisch(m),
+      [roemisch(m+1),roemisch(m-1),roemisch(m+10),roemisch(m+9),roemisch(m-10)].filter(function(x){return x!==roemisch(m);}).slice(0,4),
+      m+' = '+roemisch(m)+'. Zerlege in Hunderter, Zehner und Einer.');
+  }
+  return pick([
+    function(){ var a=R(1200,3999); return num('Welche Zahl ist '+roemisch(a)+'?', a, roemisch(a)+' = '+a+'.'); },
+    function(){ var x=R(20,99), y=R(20,99); return num('Rechne: '+roemisch(x)+' + '+roemisch(y)+'. Gib das Ergebnis als Zahl an.', x+y,
+      roemisch(x)+' = '+x+' und '+roemisch(y)+' = '+y+'. Summe: '+(x+y)+'.'); },
+    function(){ return tf('In römischen Zahlen darf ein Zeichen höchstens dreimal hintereinander stehen.', true,'Ja. Für 4 schreibt man IV statt IIII, für 40 XL statt XXXX.'); },
+    function(){ return tf('Die Zahl 99 schreibt man als IC.', false,'Nein. Man darf nicht jedes Zeichen vor jedes andere setzen. 99 = XCIX (90 + 9).'); }
+  ])();
+};
+
+var SCHAETZ = [
+  ['Eine Zimmertür ist etwa 2 m hoch.','Eine Zimmertür ist etwa 20 m hoch.'],
+  ['Ein neuer Bleistift ist etwa 18 cm lang.','Ein neuer Bleistift ist etwa 18 m lang.'],
+  ['Ein Apfel wiegt etwa 150 g.','Ein Apfel wiegt etwa 150 kg.'],
+  ['Ein Auto wiegt etwa 1 500 kg.','Ein Auto wiegt etwa 15 kg.'],
+  ['Eine Schulstunde dauert 45 Minuten.','Eine Schulstunde dauert 45 Stunden.'],
+  ['Ein Fußballfeld ist etwa 100 m lang.','Ein Fußballfeld ist etwa 100 cm lang.'],
+  ['Eine Trinkflasche fasst etwa 1 Liter.','Eine Trinkflasche fasst etwa 1 000 Liter.'],
+  ['Ein Hühnerei wiegt etwa 60 g.','Ein Hühnerei wiegt etwa 6 kg.'],
+  ['Ein Fahrrad wiegt etwa 15 kg.','Ein Fahrrad wiegt etwa 150 kg.'],
+  ['Ein Kind in der 5. Klasse ist etwa 1,45 m groß.','Ein Kind in der 5. Klasse ist etwa 14,5 m groß.'],
+  ['Ein Schulbus ist etwa 12 m lang.','Ein Schulbus ist etwa 1,2 m lang.'],
+  ['Zähneputzen dauert etwa 3 Minuten.','Zähneputzen dauert etwa 3 Stunden.']
+];
+GEN.t308 = function(l){
+  if(l===1){
+    var f=pick(SCHAETZ);
+    var andere=shuffle(SCHAETZ.filter(function(x){return x!==f;})).slice(0,3).map(function(x){return x[1];});
+    return mc('Welche Angabe ist <b>sinnvoll</b>?', f[0], [f[1]].concat(andere.slice(0,2)),
+      'Vergleiche mit etwas, das du kennst. Passt Größe und Einheit zusammen? Richtig: '+f[0]);
+  }
+  if(l===2){
+    var p=shuffle(SCHAETZ), absurd=p[0][1], echt=[p[1][0],p[2][0],p[3][0]];
+    return mc('Welche dieser Angaben ist <b>unrealistisch</b>?', absurd, echt,
+      'Unrealistisch ist: '+absurd+' Passender wäre: '+p[0][0]);
+  }
+  var q=pick(SCHAETZ), echt2=R(0,1)===1;
+  return tf(echt2?q[0]:q[1], echt2, echt2?'Das ist eine sinnvolle Schätzung.':'Das passt nicht. Besser: '+q[0]);
+};
+
+GEN.t309 = function(l){
+  if(l===1){
+    if(R(0,3)===0){
+      var n0=pick([10,100,1000]);
+      return mc('Was bedeutet der Maßstab 1 : '+n0+'?', '1 cm in der Zeichnung sind '+nf(n0)+' cm in Wirklichkeit',
+        ['1 cm in Wirklichkeit sind '+nf(n0)+' cm in der Zeichnung','1 cm in der Zeichnung sind '+nf(n0)+' m in Wirklichkeit','Die Zeichnung ist '+nf(n0)+' cm lang'],
+        'Der Maßstab 1 : '+nf(n0)+' sagt: Alles ist auf den '+nf(n0)+'ten Teil verkleinert.');
+    }
+    var n=pick([10,100,1000]), x=R(2,9);
+    return num('Maßstab 1 : '+nf(n)+'. In der Zeichnung ist eine Strecke '+x+' cm lang. Wie lang ist sie in Wirklichkeit?', x*n,
+      x+' cm · '+nf(n)+' = '+nf(x*n)+' cm.', {einheit:'cm'});
+  }
+  if(l===2){
+    var n2=pick([100,1000,10000,100000]), x2=R(2,9);
+    if(n2===100000) return num('Auf einer Karte im Maßstab 1 : 100 000 sind es '+x2+' cm. Wie viele Kilometer sind das in Wirklichkeit?', x2,
+      x2+' cm · 100 000 = '+nf(x2*100000)+' cm = '+nf(x2*1000)+' m = '+x2+' km.', {einheit:'km'});
+    return num('Maßstab 1 : '+nf(n2)+'. In der Zeichnung sind es '+x2+' cm. Wie viele Meter sind das in Wirklichkeit?', x2*n2/100,
+      x2+' cm · '+nf(n2)+' = '+nf(x2*n2)+' cm = '+nf(x2*n2/100)+' m.', {einheit:'m'});
+  }
+  var n3=pick([50,100,200,500]), cand=[2,4,5,10,12,15,20,25,30,40].filter(function(a){return (a*100)%n3===0;}), a3=pick(cand);
+  return steps('Ein Haus ist '+a3+' m lang. Du zeichnest es im Maßstab 1 : '+n3+'.',
+    [{frage:'Wie viele Zentimeter sind '+a3+' m?', loesung:String(a3*100), tipp:'1 m = 100 cm'},
+     {frage:'Wie lang ist das Haus in der Zeichnung? (in cm)', loesung:String(a3*100/n3), tipp:'Wirklichkeit : '+n3}],
+    a3+' m = '+nf(a3*100)+' cm. '+nf(a3*100)+' : '+n3+' = '+(a3*100/n3)+' cm.');
+};
+
+GEN.t505 = function(l){
+  if(l===1){
+    var a,b,c,d;
+    do { a=R(2,9); b=R(2,9); c=R(2,9); d=R(2,9); } while(a*b===c*d);
+    var gr = a*b>c*d ? 'Rechteck A' : 'Rechteck B';
+    return mc('Rechteck A ist '+a+' cm · '+b+' cm groß, Rechteck B ist '+c+' cm · '+d+' cm groß. Welches hat den größeren Flächeninhalt?', gr,
+      [gr==='Rechteck A'?'Rechteck B':'Rechteck A','Beide sind gleich groß','Das kann man nicht sagen'],
+      'A = '+a+' · '+b+' = '+(a*b)+' cm^{2}.  B = '+c+' · '+d+' = '+(c*d)+' cm^{2}.');
+  }
+  if(l===2){
+    var sum=R(7,12), a2=R(1,Math.floor(sum/2)-1), c2;
+    do { c2=R(1,Math.floor(sum/2)); } while(c2===a2);
+    var b2=sum-a2, d2=sum-c2, fa=a2*b2, fc=c2*d2, gr2=fa>fc?'Rechteck A':'Rechteck B';
+    return mc('Beide Rechtecke haben den gleichen Umfang. A ist '+a2+' cm · '+b2+' cm, B ist '+c2+' cm · '+d2+' cm. Welches hat den größeren Flächeninhalt?', gr2,
+      [gr2==='Rechteck A'?'Rechteck B':'Rechteck A','Beide sind gleich groß','Das kann man nicht sagen'],
+      'A = '+a2+' · '+b2+' = '+fa+' cm^{2}.  B = '+c2+' · '+d2+' = '+fc+' cm^{2}. Gleicher Umfang heißt nicht gleicher Flächeninhalt.');
+  }
+  var paare=[[4,9,6],[3,12,6],[2,18,6],[2,8,4],[4,16,8],[5,20,10],[4,25,10],[9,16,12],[3,27,9],[5,45,15]];
+  var p=pick(paare);
+  return pick([
+    function(){ return tf('Ein Rechteck '+p[0]+' cm · '+p[1]+' cm hat den gleichen Flächeninhalt wie ein Quadrat mit der Seitenlänge '+p[2]+' cm.', true,
+      p[0]+' · '+p[1]+' = '+(p[0]*p[1])+' cm^{2} und '+p[2]+' · '+p[2]+' = '+(p[2]*p[2])+' cm^{2}.'); },
+    function(){ return tf('Ein Rechteck '+p[0]+' cm · '+p[1]+' cm hat den gleichen Flächeninhalt wie ein Quadrat mit der Seitenlänge '+(p[2]+1)+' cm.', false,
+      p[0]+' · '+p[1]+' = '+(p[0]*p[1])+' cm^{2}, aber '+(p[2]+1)+' · '+(p[2]+1)+' = '+((p[2]+1)*(p[2]+1))+' cm^{2}.'); },
+    function(){ return tf('Zwei Rechtecke mit gleichem Umfang haben immer den gleichen Flächeninhalt.', false,'Nein. Zum Beispiel haben 2 · 6 und 4 · 4 beide den Umfang 16 cm, aber 12 cm^{2} und 16 cm^{2}.'); },
+    function(){ return tf('Zwei Rechtecke mit gleichem Flächeninhalt haben immer den gleichen Umfang.', false,'Nein. 2 · 8 und 4 · 4 haben beide 16 cm^{2}, aber die Umfänge 20 cm und 16 cm.'); }
+  ])();
+};
+
+GEN.t607 = function(l){
+  if(l===1){
+    var a=R(2,8), b=R(2,6), c=R(2,5), d=R(2,6), e=b, f=c;
+    return num('Ein Körper besteht aus zwei Quadern. Quader 1: '+a+' cm · '+b+' cm · '+c+' cm. Quader 2: '+d+' cm · '+e+' cm · '+f+' cm. Wie groß ist das gesamte Volumen?',
+      a*b*c+d*e*f, 'V1 = '+a+' · '+b+' · '+c+' = '+(a*b*c)+' cm^{3}.  V2 = '+d+' · '+e+' · '+f+' = '+(d*e*f)+' cm^{3}.  Zusammen: '+(a*b*c+d*e*f)+' cm^{3}.', {einheit:'cm³'});
+  }
+  if(l===2){
+    var x=R(6,10), y=R(5,8), z=R(4,7), u=R(2,x-2), v=R(2,y-2), w=R(1,z-1);
+    return num('Aus einem Quader ('+x+' cm · '+y+' cm · '+z+' cm) wird eine Ecke herausgesägt: ein Quader mit '+u+' cm · '+v+' cm · '+w+' cm. Wie groß ist das Volumen des Restkörpers?',
+      x*y*z-u*v*w, 'Großer Quader: '+x+' · '+y+' · '+z+' = '+(x*y*z)+' cm^{3}.  Fehlendes Stück: '+u+' · '+v+' · '+w+' = '+(u*v*w)+' cm^{3}.  Differenz: '+(x*y*z-u*v*w)+' cm^{3}.', {einheit:'cm³'});
+  }
+  var k=R(3,6), q1=[R(5,9),R(3,6),R(2,4)], q2=[R(2,4),q1[1],q1[2]];
+  var v1=q1[0]*q1[1]*q1[2], v2=q2[0]*q2[1]*q2[2], vw=k*k*k;
+  return steps('Ein Körper besteht aus einem Würfel (Kante '+k+' cm) und einem Quader ('+q1[0]+' cm · '+q1[1]+' cm · '+q1[2]+' cm).',
+    [{frage:'Volumen des Würfels? (in cm^{3})', loesung:String(vw), tipp:'V = a · a · a'},
+     {frage:'Volumen des Quaders? (in cm^{3})', loesung:String(v1), tipp:'V = a · b · c'},
+     {frage:'Gesamtvolumen? (in cm^{3})', loesung:String(vw+v1), tipp:'Beide Volumen addieren'}],
+    'Würfel: '+vw+' cm^{3}. Quader: '+v1+' cm^{3}. Zusammen: '+(vw+v1)+' cm^{3}.');
+};
+
+GEN.t213 = function(l){
+  var paare=[[12,18],[20,30],[24,36],[16,24],[18,27],[30,45],[28,42],[36,48],[15,25],[14,21],[32,48],[40,60]];
+  if(l===1){
+    var p=pick(paare), g=ggT(p[0],p[1]), gem=[]; for(var i=2;i<=g;i++) if(g%i===0) gem.push(i);
+    var wrong=[]; for(var j=2;j<=14;j++) if(!(p[0]%j===0&&p[1]%j===0)) wrong.push(j);
+    return mc('Welche Zahl ist ein gemeinsamer Teiler von '+p[0]+' und '+p[1]+'?', pick(gem), shuffle(wrong).slice(0,3),
+      'Ein gemeinsamer Teiler teilt beide Zahlen ohne Rest. Der größte gemeinsame Teiler von '+p[0]+' und '+p[1]+' ist '+g+'.');
+  }
+  if(l===2){
+    var q=pick(paare);
+    return num('Bestimme den größten gemeinsamen Teiler (ggT) von '+q[0]+' und '+q[1]+'.', ggT(q[0],q[1]),
+      'Schreibe die Teiler beider Zahlen auf. Die größte Zahl, die in beiden Listen steht, ist '+ggT(q[0],q[1])+'.');
+  }
+  var kp=pick([[4,6],[6,8],[9,12],[10,15],[12,18],[8,12],[6,10],[4,10],[5,6],[3,8]]), k=kp[0]*kp[1]/ggT(kp[0],kp[1]);
+  if(R(0,1)) return num('Bestimme das kleinste gemeinsame Vielfache (kgV) von '+kp[0]+' und '+kp[1]+'.', k,
+    'Vielfache von '+kp[0]+': '+[1,2,3,4,5,6].map(function(m){return m*kp[0];}).join(', ')+' ...  Das erste, das auch in der Reihe von '+kp[1]+' steht, ist '+k+'.');
+  return num('Eine Ampel blinkt alle '+kp[0]+' Sekunden, eine zweite alle '+kp[1]+' Sekunden. Sie starten gemeinsam. Nach wie vielen Sekunden blinken beide wieder gleichzeitig?', k,
+    'Gesucht ist das kgV von '+kp[0]+' und '+kp[1]+'. Das ist '+k+'.', {einheit:'s'});
 };
 
 /* ---------- Aufgabe erzeugen (mit Stufe, Punkten, Thema) ---------- */

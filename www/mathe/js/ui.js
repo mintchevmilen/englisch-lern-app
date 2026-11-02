@@ -154,7 +154,7 @@ VIEWS.kapitelDetail = function(p){
     h += '<button class="thema" data-t="'+t.id+'">'+
          '<span class="dot">'+STATUS_INFO[st].p+'</span>'+
          '<span class="mid"><b>'+fmt(t.titel)+'</b>'+
-         '<span>'+STATUS_INFO[st].t+(q!==null?' · '+q+' %':'')+'</span>'+
+         '<span>'+(t.buch?'Buch '+t.buch+' · ':'')+STATUS_INFO[st].t+(q!==null?' · '+q+' %':'')+'</span>'+
          bar(themaFortschritt(t.id),'sm')+'</span><span class="pct">›</span></button>';
   });
   h += '<div class="grid2" style="margin-top:12px">'+
@@ -170,7 +170,7 @@ VIEWS.kapitelDetail = function(p){
 
 VIEWS.thema = function(p){
   var t = THEMA_BY_ID[p.t], st = status(t.id), stat = S.themen[t.id];
-  var h = kopf(t.titel, t.kapitelTitel);
+  var h = kopf(t.titel, t.kapitelTitel+(t.buch?' · Buch '+t.buch:''));
   h += '<div class="card"><div class="small">Lernziel</div><b>'+fmt(t.ziel)+'</b>'+
        '<div class="row between" style="margin-top:10px"><span class="chip '+st+'">'+STATUS_INFO[st].p+' '+STATUS_INFO[st].t+'</span>'+
        '<span class="small">'+(stat? stat.n+' Aufgaben · '+(quote(t.id)||0)+' % richtig' : 'noch nicht geübt')+'</span></div></div>';
